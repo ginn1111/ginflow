@@ -1,9 +1,10 @@
-"""Tests for minimal Ginflow v2 execution package seam."""
+"""Tests for minimal Ginflow execution package seam."""
 from execution_package import approve_package, shape_package, validate_package
 
 
+REF = {"provider": "local", "id": "UNIT-1", "path_or_url": "docs/work-units/UNIT-1.md"}
+
 PACKAGE = {
-    "workflow_version": 2,
     "initiative_key": "INIT-1",
     "contract": {
         "key": "INIT-1-CONTRACT",
@@ -26,6 +27,7 @@ PACKAGE = {
         "scope": ["core/ginflow-core"],
         "acceptance": ["validates"],
         "workspace": "/repo/unit-1",
+        "document": REF,
         "dependencies": [],
     }],
     "plans": [{"key": "PLAN-1", "unit_key": "UNIT-1", "state": "approved", "steps": ["code"], "verification": ["make test"]}],
@@ -50,6 +52,7 @@ def test_shaping_and_approval_are_single_package_operations():
         PACKAGE["baseline"],
     )
     assert draft["contract"]["state"] == "draft"
+    assert "version" not in draft
     approved = approve_package(draft, "gin", "2026-10-06T06:00:00Z")
     assert validate_package(approved)["valid"] is True
     assert approved["contract"]["approval"]["approver"] == "gin"
@@ -84,6 +87,12 @@ def with_ref(ref):
     return {**PACKAGE, "units": [{**PACKAGE["units"][0], "document": ref}]}
 
 
+def test_unit_without_document_is_invalid():
+    unit = {key: value for key, value in PACKAGE["units"][0].items() if key != "document"}
+    result = validate_package({**PACKAGE, "units": [unit]})
+    assert result["valid"] is False and "unit UNIT-1.document is required" in result["errors"]
+
+
 def test_document_reference_validation():
     assert validate_package(with_ref(REF))["valid"] is True
     for bad in ({**REF, "id": "OTHER"}, {"provider": "local", "id": "UNIT-1"}, {**REF, "path_or_url": " "}, "x", [REF]):
@@ -94,6 +103,8 @@ def test_document_reference_validation():
 
 if __name__ == "__main__":
     test_document_reference_validation()
+    test_unit_without_document_is_invalid()
     test_minimal_package_is_valid()
+    test_shaping_and_approval_are_single_package_operations()
     test_package_rejects_cycle_deterministically()
     print("execution package tests passed")

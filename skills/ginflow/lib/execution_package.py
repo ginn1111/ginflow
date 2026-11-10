@@ -1,4 +1,4 @@
-"""Deterministic validation seam for minimal Ginflow v2 packages."""
+"""Deterministic validation seam for minimal Ginflow execution packages."""
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
@@ -30,10 +30,8 @@ def _utc(value: Any) -> bool:
 
 
 def _document_errors(units: Sequence[Any]) -> list[str]:
-    """Validate provider-neutral `document` refs; legacy packages without any pass."""
+    """Validate provider-neutral `document` refs; every unit needs exactly one."""
     mappings = [u for u in units if isinstance(u, Mapping) and _text(u.get("key"))]
-    if not any("document" in u for u in mappings):
-        return []
     errors: list[str] = []
     seen: set[tuple[str, str]] = set()
     for unit in mappings:
@@ -66,7 +64,6 @@ def shape_package(
 ) -> dict[str, Any]:
     """Build one draft package without dispatching work or mutating inputs."""
     return {
-        "workflow_version": 2,
         "initiative_key": initiative_key,
         "contract": {**deepcopy(dict(contract)), "state": "draft"},
         "spec": {**deepcopy(dict(spec)), "state": "draft"},
@@ -100,7 +97,7 @@ def approve_package(
 
 
 def validate_package(package: Mapping[str, Any]) -> dict[str, Any]:
-    """Return stable validation result for one approved v2 package.
+    """Return stable validation result for one approved package.
 
     Validator accepts mappings so callers can load JSON/YAML without coupling
     this core seam to a serialization library.
@@ -109,8 +106,6 @@ def validate_package(package: Mapping[str, Any]) -> dict[str, Any]:
     if not isinstance(package, Mapping):
         return {"valid": False, "errors": ["package must be a mapping"]}
 
-    if package.get("workflow_version") != 2:
-        errors.append("workflow_version must be 2")
     if not _text(package.get("initiative_key")):
         errors.append("initiative_key is required")
 

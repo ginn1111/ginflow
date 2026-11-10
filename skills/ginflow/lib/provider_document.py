@@ -10,7 +10,6 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
-SCHEMA = "provider_document/v1"
 LOCAL_DIR = "docs/work-units"
 REQUIRED = ("key", "objective", "scope", "acceptance", "contract", "spec", "plan", "verification")
 SECTIONS = (
@@ -45,7 +44,7 @@ def _render(value: Any) -> str:
 
 def _render_local(package: Mapping[str, Any]) -> str:
     key = package["key"]
-    parts = [f"---\nprovider: local\nwork_unit: {key}\nschema: {SCHEMA}\n---\n", f"# {key}\n"]
+    parts = [f"---\nprovider: local\nwork_unit: {key}\n---\n", f"# {key}\n"]
     for heading, field in SECTIONS:
         if _present(package.get(field)):
             parts.append(f"## {heading}\n\n{_render(package[field])}\n")
@@ -76,7 +75,7 @@ def build_provider_document(
         "title": f"{key} — {first_line}",
         "body": body,
         "target_hints": {**dict(target or {}), "path": f"{LOCAL_DIR}/{key}.md"},
-        "metadata": {"provider": provider, "work_unit": key, "schema": SCHEMA},
+        "metadata": {"provider": provider, "work_unit": key},
         "content_hash": content_hash(body),
     }
 

@@ -10,7 +10,6 @@ def test_creates_blocked_unit_and_integration_cards():
         return {"id": f"T-{len(calls)}", "status": args["initial_status"]}
 
     package = {
-        "workflow_version": 2,
         "initiative_key": "INIT-1",
         "contract": {
             "key": "INIT-1-CONTRACT", "state": "approved", "objective": "ship",
@@ -24,6 +23,7 @@ def test_creates_blocked_unit_and_integration_cards():
         "units": [{
             "key": "UNIT-1", "plan_key": "PLAN-1", "owner": "worker", "scope": ["core"],
             "acceptance": ["works"], "workspace": "/repo/unit", "dependencies": [],
+            "document": {"provider": "local", "id": "UNIT-1", "path_or_url": "docs/work-units/UNIT-1.md"},
         }],
         "plans": [{"key": "PLAN-1", "unit_key": "UNIT-1", "state": "approved", "steps": ["code"], "verification": ["make test"]}],
         "baseline": {"commit": "abc", "verification": {"command": "make test", "result": "passed"}},
@@ -39,7 +39,7 @@ def test_creates_blocked_unit_and_integration_cards():
 
 def test_rejects_unapproved_package_without_dispatch():
     calls = []
-    package = {"workflow_version": 2, "contract": {"state": "draft"}}
+    package = {"contract": {"state": "draft"}}
 
     def create(args):
         calls.append(args)
@@ -62,7 +62,7 @@ def test_document_card_is_concise_and_links_document():
         return {"id": f"T-{len(calls)}"}
 
     package = {
-        "workflow_version": 2, "initiative_key": "INIT-1",
+        "initiative_key": "INIT-1",
         "contract": {"key": "C", "state": "approved", "objective": "ship", "boundaries": ["core"],
                      "exclusions": ["x"], "acceptance": ["ok"], "verification": ["make test"], "owner": "ginb",
                      "approval": {"approver": "gin", "approved_at": "2026-10-06T06:00:00Z"}},
