@@ -63,7 +63,7 @@ def main():
         # Isolate from any outer Hermes session (delegated child, kanban worker).
         for key in [k for k in env if k.startswith("HERMES_KANBAN_") or k in (
             "HERMES_DELEGATED_CHILD_CONTEXT", "HERMES_SUPERVISED_CHILD", "HERMES_SINGLE_QUERY_SESSION", "HERMES_PROFILE")]:
-            if key != "HERMES_KANBAN_BOARD":
+            if key not in ("HERMES_KANBAN_BOARD", "HERMES_KANBAN_HOME"):  # keep the temp board home
                 del env[key]
         os.environ.clear()
         os.environ.update(env)
