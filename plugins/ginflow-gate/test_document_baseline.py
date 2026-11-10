@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """document_baseline gate tests for local provider documents."""
-import importlib.util
+import importlib
 import subprocess
 import sys
 import tempfile
@@ -10,10 +10,8 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "skills/ginflow/lib"))
 from provider_document import build_provider_document, write_local_document  # noqa: E402
 
-spec = importlib.util.spec_from_file_location("ginflow_gate_gate_doc", ROOT / "plugins/ginflow-gate/gate.py")
-assert spec and spec.loader
-gate = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(gate)
+sys.path.insert(0, str(ROOT / "plugins"))
+gate = importlib.import_module("ginflow-gate.gate")
 
 PACKAGE = {
     "key": "DOC-1", "objective": "ship", "scope": ["core"], "acceptance": ["ok"],

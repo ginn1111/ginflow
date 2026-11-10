@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Integration test for gate approval plus native Kanban review mutation."""
 
-import importlib.util
+import importlib
 import json
 import os
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 
@@ -20,12 +21,9 @@ SPEC = "---\nstatus: completed\n---\n# Review transition\n"
 
 
 def load_gate():
-    path = ROOT / "plugins/ginflow-gate/gate.py"
-    spec = importlib.util.spec_from_file_location("native_review_gate", path)
-    assert spec and spec.loader
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+    if str(ROOT / "plugins") not in sys.path:
+        sys.path.insert(0, str(ROOT / "plugins"))
+    return importlib.import_module("ginflow-gate.gate")
 
 
 def run_hermes(env, *args):

@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """kanban_request_review reviewer injection from ginflow.reviewer.profile."""
-import importlib.util
+import importlib
+import sys
 import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-spec = importlib.util.spec_from_file_location("gate", ROOT / "plugins/ginflow-gate/gate.py")
-gate = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(gate)
+sys.path.insert(0, str(ROOT / "plugins"))
+gate = importlib.import_module("ginflow-gate.gate")
 
 CARD = {"id": "t_x", "title": "t", "objective": "o", "scope": ["s"], "acceptance": ["a"],
         "links": ["l"], "assignee": "ginb"}

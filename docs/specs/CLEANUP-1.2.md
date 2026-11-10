@@ -1,5 +1,5 @@
 ---
-status: draft
+status: completed
 scope: plugins/ginflow-gate/*.py; plugins/ginflow-trace/test_ginflow_trace_integration.py; skills/ginflow/scripts/test-ginflow-lifecycle.py
 owner: ginb
 ---

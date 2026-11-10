@@ -5,21 +5,13 @@ post_tool_call -> finish(): push exact commit, reuse or create MR/PR, comment UR
 """
 from __future__ import annotations
 
-import importlib.util
 import json
 import os
 import subprocess
 from pathlib import Path
 from typing import Any
 
-try:
-    from . import skill_lib
-except ImportError:
-    _skill_lib_spec = importlib.util.spec_from_file_location("ginflow_gate_skill_lib", Path(__file__).with_name("skill_lib.py"))
-    if not _skill_lib_spec or not _skill_lib_spec.loader:
-        raise ImportError("unable to load skill lib loader")
-    skill_lib = importlib.util.module_from_spec(_skill_lib_spec)
-    _skill_lib_spec.loader.exec_module(skill_lib)
+from . import skill_lib
 core = skill_lib.load("publish")
 _kanban = skill_lib.load("harness_core")
 

@@ -5,10 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-try:  # one source for the blocker contract
-    from .blocker_reporting import MAX_ATTEMPTS, NON_RECOVERABLE_KINDS
-except ImportError:
-    from blocker_reporting import MAX_ATTEMPTS, NON_RECOVERABLE_KINDS
+from .blocker_reporting import MAX_ATTEMPTS, NON_RECOVERABLE_KINDS
 
 RECOVERABLE_KINDS = frozenset({"transient", "unknown"})
 TERMINAL_STATUSES = frozenset({"done", "cancelled", "archived"})

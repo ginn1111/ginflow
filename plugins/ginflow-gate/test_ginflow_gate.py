@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Test ginflow-gate routing and registration behavior."""
 
-import importlib.util
+import importlib
 import json
 import os
 import shutil
@@ -13,10 +13,9 @@ ROOT = Path(__file__).resolve().parents[2]
 PLUGIN = ROOT / "plugins/ginflow-gate/routing.py"
 TEST_BOARD = "ginflow-testing"
 
-spec = importlib.util.spec_from_file_location("ginflow_gate_routing", PLUGIN)
-assert spec and spec.loader
-module = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(module)
+import sys
+sys.path.insert(0, str(ROOT / "plugins"))
+module = importlib.import_module("ginflow-gate.routing")
 
 _ginflow_loaded = module._ginflow_loaded
 _routing_context = module._routing_context
@@ -425,7 +424,7 @@ if __name__ == "__main__":
 # Completion gate integration coverage
 routing_module = module
 #!/usr/bin/env python3
-import importlib.util
+import importlib
 import json
 import subprocess
 import tempfile
@@ -435,10 +434,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 PLUGIN = ROOT / "plugins/ginflow-gate/gate.py"
 
-spec = importlib.util.spec_from_file_location("ginflow_gate_gate", PLUGIN)
-assert spec and spec.loader
-module = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(module)
+module = importlib.import_module("ginflow-gate.gate")
 validate_completion = module.validate_completion
 
 
@@ -614,15 +610,7 @@ class Hooks:
         self.names.append(name)
 
 
-package_path = ROOT / "plugins/ginflow-gate/__init__.py"
-package_spec = importlib.util.spec_from_file_location(
-    "ginflow_gate_package", package_path, submodule_search_locations=[str(package_path.parent)]
-)
-assert package_spec and package_spec.loader
-package = importlib.util.module_from_spec(package_spec)
-import sys
-sys.modules["ginflow_gate_package"] = package
-package_spec.loader.exec_module(package)
+package = importlib.import_module("ginflow-gate")
 hooks = Hooks()
 package.register(hooks)
 assert hooks.names == ["pre_llm_call", "pre_tool_call", "kanban_task_blocked", "pre_tool_call", "post_tool_call"]

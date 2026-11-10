@@ -10,7 +10,7 @@ name and the card's identity.
 
 from __future__ import annotations
 
-import importlib.util
+import importlib
 import json
 import os
 import subprocess
@@ -36,12 +36,9 @@ SPEC = "---\nstatus: completed\n---\n# Trace integration\n"
 
 
 def _load_gate_module() -> ModuleType:
-    gate_path = ROOT.parent / "ginflow-gate/gate.py"
-    spec = importlib.util.spec_from_file_location("ginflow_gate_integration", gate_path)
-    assert spec and spec.loader, "unable to locate gate.py"
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+    if str(ROOT.parent) not in sys.path:
+        sys.path.insert(0, str(ROOT.parent))
+    return importlib.import_module("ginflow-gate.gate")
 
 
 def _records(root: Path, filename: str) -> list[dict]:

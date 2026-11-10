@@ -12,7 +12,6 @@ The injected context is ephemeral (per-turn) and never persisted to the session 
 
 from __future__ import annotations
 
-import importlib.util
 import json
 import logging
 import os
@@ -20,27 +19,10 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
-try:
-    from .trace_adapter import trace
-except ImportError:
-    _trace_spec = importlib.util.spec_from_file_location(
-        "ginflow_gate_trace_adapter", Path(__file__).with_name("trace_adapter.py")
-    )
-    if not _trace_spec or not _trace_spec.loader:
-        raise ImportError("unable to load trace adapter")
-    _trace_module = importlib.util.module_from_spec(_trace_spec)
-    _trace_spec.loader.exec_module(_trace_module)
-    trace = _trace_module.trace
+from .trace_adapter import trace
+from . import skill_lib
 
 
-try:
-    from . import skill_lib
-except ImportError:
-    _skill_lib_spec = importlib.util.spec_from_file_location("ginflow_gate_skill_lib", Path(__file__).with_name("skill_lib.py"))
-    if not _skill_lib_spec or not _skill_lib_spec.loader:
-        raise ImportError("unable to load skill lib loader")
-    skill_lib = importlib.util.module_from_spec(_skill_lib_spec)
-    _skill_lib_spec.loader.exec_module(skill_lib)
 _core = skill_lib.load("harness_core")
 startup_gate = _core.startup_gate
 _routing_core = skill_lib.load("routing")
@@ -50,14 +32,9 @@ _resolve_board = _core.resolve_board
 _context_error = _core.context_error
 _config_exists = _core.config_exists
 _publish_config = skill_lib.load("project_config")
-try:
-    from . import publish as _publish
-except ImportError:
-    _publish_spec = importlib.util.spec_from_file_location("ginflow_routing_publish", Path(__file__).with_name("publish.py"))
-    if not _publish_spec or not _publish_spec.loader:
-        raise ImportError("unable to load publish adapter")
-    _publish = importlib.util.module_from_spec(_publish_spec)
-    _publish_spec.loader.exec_module(_publish)
+from . import publish as _publish
+
+
 
 logger = logging.getLogger(__name__)
 
@@ -337,18 +314,10 @@ def _routing_context(**kwargs: Any) -> dict[str, str] | str | None:
 @trace
 def _normalize_task(task: dict[str, Any]) -> dict[str, Any]:
     """Adapt live task fields for the shared Ginflow startup validator."""
-    body = task.get("body", "")
-    fields = _core.parse_card_body(body)
-    workspace = task.get("workspace") or task.get("workspace_path") or ""
-    if task.get("workspace_kind") and task.get("workspace_path"):
-        workspace = f"{task['workspace_kind']}:{task['workspace_path']}"
-    return {
-        "id": task.get("id"), "title": task.get("title"),
-        "objective": fields["objective"], "scope": fields["scope"],
-        "acceptance": fields["acceptance"], "links": fields["links"],
-        "workspace": workspace, "status": task.get("status"),
-        "assignee": task.get("assignee"),
-    }
+    card = _core.normalize_card({"task": task})
+    if not card["workspace"]:
+        card["workspace"] = task.get("workspace") or task.get("workspace_path") or ""
+    return card
 
 
 @trace
