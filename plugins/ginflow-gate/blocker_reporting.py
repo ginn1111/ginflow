@@ -5,9 +5,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-MAX_ATTEMPTS = 3
-BLOCKER_KINDS = frozenset({"transient", "unknown", "config_error", "persist_error", "human_input"})
-NON_RECOVERABLE_KINDS = frozenset({"config_error", "persist_error", "human_input"})
+# Mirrors hermes_cli.kanban_db (pinned by test); `dependency` never reaches recovery.
+BLOCK_RECURRENCE_LIMIT = 2
+BLOCKER_KINDS = frozenset({"transient", "needs_input", "capability"})
+HUMAN_KINDS = frozenset({"needs_input", "capability"})
+STATUSES = frozenset({"blocked", "triage"})
 
 
 def _required_text(name: str, value: Any, *, single_line: bool = False) -> str:
@@ -25,6 +27,12 @@ def _string_list(name: str, value: Any) -> list[str]:
     return [_required_text(f"{name} item", item, single_line=True) for item in value]
 
 
+def _recurrences(value: Any) -> int:
+    if not isinstance(value, int) or isinstance(value, bool) or value < 1:
+        raise ValueError("recurrences must be a positive integer")
+    return value
+
+
 def build_blocker_event(
     *,
     event_id: str,
@@ -36,7 +44,8 @@ def build_blocker_event(
     evidence: list[str],
     attempted_commands: list[str],
     occurred_at: str | None = None,
-    attempt: int = 0,
+    recurrences: int = 1,
+    status: str = "blocked",
 ) -> dict[str, Any]:
     """Return one validated blocked event without mutating Kanban state."""
     event_id = _required_text("event_id", event_id, single_line=True)
@@ -47,8 +56,9 @@ def build_blocker_event(
         raise ValueError("blocker_kind is unsupported")
     error_summary = _required_text("error_summary", error_summary, single_line=True)
     canonical_workspace = str(Path(_required_text("workspace", workspace)).expanduser().resolve())
-    if not isinstance(attempt, int) or isinstance(attempt, bool) or attempt < 0:
-        raise ValueError("attempt must be a non-negative integer")
+    recurrences = _recurrences(recurrences)
+    if status not in STATUSES:
+        raise ValueError("status must be blocked or triage")
     timestamp = occurred_at or datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     timestamp = _required_text("occurred_at", timestamp, single_line=True)
     if not timestamp.endswith("Z"):
@@ -65,40 +75,40 @@ def build_blocker_event(
         "evidence": _string_list("evidence", evidence),
         "attempted_commands": _string_list("attempted_commands", attempted_commands),
         "occurred_at": timestamp,
-        "attempt": attempt,
-        "max_attempts": MAX_ATTEMPTS,
-        "recovery_candidate": blocker_kind not in NON_RECOVERABLE_KINDS,
+        "recurrences": recurrences,
+        "limit": BLOCK_RECURRENCE_LIMIT,
+        "status": status,
+        "recovery_candidate": blocker_kind == "transient" and status == "blocked",
         "decision": "pending",
         "decision_owner": "worker",
         "idempotency_key": f"{card_id}:{event_id}",
     }
 
 
-def blocker_comment(event: dict[str, Any]) -> str:
+def blocker_comment(event: dict[str, Any], *, decision: str | None = None, reason: str | None = None) -> str:
     """Render the safe one-line comment contract without raw evidence."""
     event_id = _required_text("event_id", event.get("event_id"), single_line=True)
     blocker_kind = _required_text("blocker_kind", event.get("blocker_kind"), single_line=True)
     if blocker_kind not in BLOCKER_KINDS:
         raise ValueError("blocker_kind is unsupported")
-    attempt = event.get("attempt")
-    max_attempts = event.get("max_attempts")
-    if not isinstance(attempt, int) or isinstance(attempt, bool) or attempt < 0:
-        raise ValueError("attempt must be a non-negative integer")
-    if max_attempts != MAX_ATTEMPTS:
-        raise ValueError("max_attempts must equal 3")
-    decision = _required_text("decision", event.get("decision"), single_line=True)
+    recurrences = _recurrences(event.get("recurrences"))
+    if event.get("limit") != BLOCK_RECURRENCE_LIMIT:
+        raise ValueError(f"limit must equal {BLOCK_RECURRENCE_LIMIT}")
+    decision = _required_text("decision", decision or event.get("decision"), single_line=True)
     owner = _required_text("decision_owner", event.get("decision_owner"), single_line=True)
+    reason = _required_text("reason", reason or f"worker_reported_{blocker_kind}", single_line=True)
     return (
-        f"[ginflow-recovery] event={event_id} type=blocked kind={blocker_kind} "
-        f"attempt={attempt}/{max_attempts} decision={decision} owner={owner} "
-        f"reason=worker_reported_{blocker_kind}"
+        f"[ginflow-recovery] event={event_id} kind={blocker_kind} "
+        f"recurrences={recurrences}/{BLOCK_RECURRENCE_LIMIT} decision={decision} owner={owner} "
+        f"reason={reason}"
     )
 
 
 __all__ = [
     "BLOCKER_KINDS",
-    "MAX_ATTEMPTS",
-    "NON_RECOVERABLE_KINDS",
+    "BLOCK_RECURRENCE_LIMIT",
+    "HUMAN_KINDS",
+    "STATUSES",
     "blocker_comment",
     "build_blocker_event",
 ]

@@ -87,7 +87,14 @@ def test_signal_next_action_mapping():
         assert event["next_action"] == next_action, signal
 
 
+def test_recovery_retry_exhausted_notifies_human():
+    values = valid_kwargs()
+    values.update(work_mode="recovery", signal="retry_exhausted")
+    assert build_feedback_event(**values)["next_action"] == "notify_human"
+
+
 if __name__ == "__main__":
+    test_recovery_retry_exhausted_notifies_human()
     test_valid_event_is_normalized_and_pure()
     test_rejects_invalid_fields()
     test_signal_next_action_mapping()

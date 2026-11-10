@@ -19,9 +19,9 @@ Regenerate evidence: `grep -rnw <name> plugins skills/ginflow scripts --include=
 | block_routing.py | `build_message` | [x] kanban_task_blocked | [ ] | [x] |
 | block_routing.py | `on_task_blocked` | [x] kanban_task_blocked | [ ] | [ ] |
 | block_routing.py | `register` | [x] plugin load | [ ] | [x] |
-| blocker_reporting.py | `build_blocker_event` | [ ] | [ ] | [x] |
-| blocker_reporting.py | `blocker_comment` | [ ] | [ ] | [x] |
-| feedback.py | `build_feedback_event` | [ ] | [ ] | [x] |
+| blocker_reporting.py | `build_blocker_event` | [x] kanban_task_blocked | [ ] | [x] |
+| blocker_reporting.py | `blocker_comment` | [x] kanban_task_blocked | [ ] | [x] |
+| feedback.py | `build_feedback_event` | [x] kanban_task_blocked | [ ] | [x] |
 | gate.py | `load_card` | [x] pre_tool_call | [ ] | [x] |
 | gate.py | `linked_documents_missing_completion` | [x] pre_tool_call | [ ] | [x] |
 | gate.py | `validate_completion` | [x] pre_tool_call | [ ] | [x] |
@@ -33,7 +33,7 @@ Regenerate evidence: `grep -rnw <name> plugins skills/ginflow scripts --include=
 | publish.py | `prepare` | [x] pre_tool_call | [ ] | [ ] |
 | publish.py | `publish` | [x] post_tool_call | [x] | [x] |
 | publish.py | `finish` | [x] post_tool_call | [x] | [ ] |
-| recovery_policy.py | `evaluate_recovery` | [ ] | [ ] | [x] |
+| recovery_policy.py | `evaluate_recovery` | [x] kanban_task_blocked | [ ] | [x] |
 | routing.py | `register` | [x] plugin load | [ ] | [x] |
 | routing.py | `_routing_context` | [x] pre_llm_call | [ ] | [x] |
 | skill_lib.py | `load` | [x] import time | [x] | [x] |
@@ -126,7 +126,7 @@ Regenerate evidence: `grep -rnw <name> plugins skills/ginflow scripts --include=
 
 ## Summary
 
-- Wired: routing context, block guard and block routing, completion gate, publish, trace, core harness/routing/publish primitives, config readers (board, context, reviewer, publish, notify).
-- Not wired (library and tests only): Initiative chain (`initiative` → `execution_package` → `execution_batch` / `card_creation` → `decision` / `review_cycle` → `merge_request` / `followup`), provider document builder (`build_provider_document`, `write_local_document`), blocker/recovery/feedback helpers (`blocker_reporting`, `recovery_policy`, `feedback`), worker defaults (`configured_worker`, `worker_error`, `resolve_worker_dispatch`, `persist_worker_defaults`), documents config (`documents_*`, `configured_documents`, `resolve_documents`, `require_ready`, `set_documents`), reviewer seeding (`hermes_default_reviewer`, `seed_default_reviewer`).
+- Wired: routing context, block guard, block routing with recovery policy and feedback (`blocker_reporting`, `recovery_policy`, `feedback`), completion gate, publish, trace, core harness/routing/publish primitives, config readers (board, context, reviewer, publish, notify).
+- Not wired (library and tests only): Initiative chain (`initiative` → `execution_package` → `execution_batch` / `card_creation` → `decision` / `review_cycle` → `merge_request` / `followup`), provider document builder (`build_provider_document`, `write_local_document`), worker defaults (`configured_worker`, `worker_error`, `resolve_worker_dispatch`, `persist_worker_defaults`), documents config (`documents_*`, `configured_documents`, `resolve_documents`, `require_ready`, `set_documents`), reviewer seeding (`hermes_default_reviewer`, `seed_default_reviewer`).
 - No caller and no test: `project_config.py:configured_worker`, `project_config.py:resolve_worker_dispatch`, `project_config.py:hermes_default_reviewer`, `project_config.py:seed_default_reviewer`, `project_config.py:configured_documents`, `project_config.py:persist_worker_defaults`, `project_config.py:initialize_context`, `review_cycle.py:append_review_revision`.
 - Every plugin test file runs under `make test` (`test_native_review_transition.py`, `test_block_routing.py` and the trace integration test skip when the `hermes` CLI is missing).
