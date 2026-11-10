@@ -20,12 +20,12 @@ def authorize(package_value, **changes):
 
 def package():
     return {
-        "workflow_version": 2,
         "initiative_key": "APP-42",
         "package_revision": "APP-42/pkg-1",
+        "links": {"contract": "docs/contracts/C.md", "spec": "docs/specs/S.md"},
         "contract": {"key": "C", "state": "approved", "objective": "ship", "boundaries": ["core"], "exclusions": ["deploy"], "acceptance": ["works"], "verification": ["make test"], "approval": {"approver": "gin", "approved_at": "2026-10-09T00:00:00Z"}},
         "spec": {"state": "approved", "key": "S", "behavior": ["works"], "interfaces": ["API"], "rules": ["safe"], "edge_cases": ["empty"], "constraints": ["local"]},
-        "units": [{"key": "U", "plan_key": "P", "owner": "worker", "objective": "ship core", "scope": ["core"], "exclusions": ["deploy"], "acceptance": ["works"], "workspace": "/repo/u", "dependencies": [], "verification": ["make test"], "change_group": "CORE", "risk": "low", "escalation": "stop on failure"}],
+        "units": [{"key": "U", "plan_key": "P", "owner": "worker", "objective": "ship core", "scope": ["core"], "exclusions": ["deploy"], "acceptance": ["works"], "workspace": "/repo/u", "dependencies": [], "verification": ["make test"], "document": {"provider": "local", "id": "U", "path_or_url": "docs/work-units/U.md"}, "change_group": "CORE", "risk": "low", "escalation": "stop on failure"}],
         "plans": [{"key": "P", "unit_key": "U", "state": "approved", "steps": ["code"], "verification": ["make test"]}],
         "baseline": {"commit": "base", "verification": {"command": "make test", "result": "passed"}},
     }
@@ -59,17 +59,23 @@ def test_changed_package_and_incomplete_ticket_rejected():
         raise AssertionError("incomplete Ticket authorized")
 
 
-def test_create_batch_delegates_legacy_card_creator():
+def test_create_batch_delegates_card_creator():
     calls = []
     result = create_batch(package(), actor=ACTOR, budget={"max_turns": 10}, stop_conditions=["stop"], workspaces=["/repo/u"], baseline_commit="base", create_card=lambda args: calls.append(args) or {"id": str(len(calls))})
     assert result["cards"]["integration_card"]["id"] == "2"
+    assert calls[0]["initial_status"] == calls[1]["initial_status"] == "blocked"
     assert calls[0]["metadata"]["initiative_key"] == "APP-42"
+    assert calls[0]["metadata"]["document"]["path_or_url"] == "docs/work-units/U.md"
+    assert calls[0]["metadata"]["batch_key"] == calls[1]["metadata"]["batch_key"]
+    assert "- docs/work-units/U.md" in calls[0]["body"]
+    assert "- docs/specs/S.md" in calls[1]["body"]
+    assert calls[1]["metadata"]["package_digest"] == result["batch"]["package_digest"]
 
 
 def test_shared_mutable_workspace_requires_isolation_proof():
     candidate = package()
     second = deepcopy(candidate["units"][0])
-    second.update({"key": "V", "plan_key": "Q", "objective": "ship docs"})
+    second.update({"key": "V", "plan_key": "Q", "objective": "ship docs", "document": {"provider": "local", "id": "V", "path_or_url": "docs/work-units/V.md"}})
     candidate["units"].append(second)
     candidate["plans"].append({"key": "Q", "unit_key": "V", "state": "approved", "steps": ["code"], "verification": ["make test"]})
     try:
@@ -83,7 +89,7 @@ def test_shared_mutable_workspace_requires_isolation_proof():
 def test_isolated_worktree_proof_allows_parallel_units():
     candidate = package()
     second = deepcopy(candidate["units"][0])
-    second.update({"key": "V", "plan_key": "Q", "objective": "ship docs", "workspace_isolation": {"kind": "worktree", "path": "/tmp/worktree-v"}})
+    second.update({"key": "V", "plan_key": "Q", "objective": "ship docs", "document": {"provider": "local", "id": "V", "path_or_url": "docs/work-units/V.md"}, "workspace_isolation": {"kind": "worktree", "path": "/tmp/worktree-v"}})
     candidate["units"][0]["workspace_isolation"] = {"kind": "worktree", "path": "/tmp/worktree-u"}
     candidate["units"].append(second)
     candidate["plans"].append({"key": "Q", "unit_key": "V", "state": "approved", "steps": ["code"], "verification": ["make test"]})
@@ -103,7 +109,7 @@ def test_duplicate_workspace_declarations_rejected():
 def _two_units(path_u, path_v):
     candidate = package()
     second = deepcopy(candidate["units"][0])
-    second.update({"key": "V", "plan_key": "Q", "objective": "ship docs", "workspace_isolation": {"kind": "worktree", "path": path_v}})
+    second.update({"key": "V", "plan_key": "Q", "objective": "ship docs", "document": {"provider": "local", "id": "V", "path_or_url": "docs/work-units/V.md"}, "workspace_isolation": {"kind": "worktree", "path": path_v}})
     candidate["units"][0]["workspace_isolation"] = {"kind": "worktree", "path": path_u}
     candidate["units"].append(second)
     candidate["plans"].append({"key": "Q", "unit_key": "V", "state": "approved", "steps": ["code"], "verification": ["make test"]})
@@ -144,7 +150,7 @@ def test_collection_fields_reject_strings_and_stop_conditions_reject_blanks():
 if __name__ == "__main__":
     test_digest_is_canonical_and_authorization_binds_inputs()
     test_changed_package_and_incomplete_ticket_rejected()
-    test_create_batch_delegates_legacy_card_creator()
+    test_create_batch_delegates_card_creator()
     test_shared_mutable_workspace_requires_isolation_proof()
     test_isolated_worktree_proof_allows_parallel_units()
     test_duplicate_workspace_declarations_rejected()

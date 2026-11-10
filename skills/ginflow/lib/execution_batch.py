@@ -1,4 +1,4 @@
-"""Immutable AFK execution batch authorization around v2 cards."""
+"""Immutable AFK execution batch authorization around execution cards."""
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
@@ -123,7 +123,7 @@ def authorize_batch(package: Mapping[str, Any], *, actor: Mapping[str, Any], bud
 
 
 def create_batch(package: Mapping[str, Any], *, actor: Mapping[str, Any], budget: Mapping[str, Any], stop_conditions: Sequence[str], workspaces: Sequence[str], baseline_commit: str, create_card: Callable[[dict[str, Any]], Mapping[str, Any]], batch_number: int = 1) -> dict[str, Any]:
-    """Authorize and create legacy blocked cards, retaining batch lineage metadata."""
+    """Authorize and create blocked unit and integration cards with batch lineage metadata."""
     batch = authorize_batch(package, actor=actor, budget=budget, stop_conditions=stop_conditions, workspaces=workspaces, baseline_commit=baseline_commit, batch_number=batch_number)
     enriched = deepcopy(dict(package))
     enriched["initiative_key"] = batch["initiative_key"]

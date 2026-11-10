@@ -1,5 +1,5 @@
 ---
-status: draft
+status: completed
 scope: skills/ginflow/lib/execution_package.py, card_creation.py, execution_batch.py, provider_document.py and their tests; plugins/ginflow-gate/gate.py (comment only)
 owner: ginb
 ---

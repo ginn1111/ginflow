@@ -1,4 +1,4 @@
-"""Build blocked Kanban cards from an approved Ginflow v2 package."""
+"""Build blocked Kanban cards from an approved Ginflow package."""
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping
@@ -24,11 +24,6 @@ def _links(package: Mapping[str, Any], unit: Mapping[str, Any] | None = None) ->
     if isinstance(links, Mapping):
         for key in ("contract", "spec"):
             value = links.get(key)
-            if isinstance(value, str) and value.strip():
-                result.append(value)
-        if unit:
-            plans = links.get("plans", {})
-            value = plans.get(unit.get("key")) if isinstance(plans, Mapping) else None
             if isinstance(value, str) and value.strip():
                 result.append(value)
     return result
@@ -68,8 +63,6 @@ def create_execution_cards(
     ``create_card`` receives native create arguments and returns a mapping with an
     ``id``. Callback is injected so this seam stays independent of Hermes CLI/API.
     """
-    if package.get("workflow_version") != 2:
-        raise ValueError("workflow_version must be 2")
     if package.get("contract", {}).get("state") != "approved":
         raise ValueError("package must be approved before card creation")
     validation = validate_package(package)

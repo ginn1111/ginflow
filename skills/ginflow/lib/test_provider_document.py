@@ -24,7 +24,8 @@ def raises(fn, text):
 def test_builder_sections_metadata_and_hash():
     doc = build_provider_document("local", PACKAGE, {"root": "/r"})
     body = doc["body"]
-    assert body.startswith("---\nprovider: local\nwork_unit: UNIT-1\nschema: provider_document/v1\n---\n")
+    assert body.startswith("---\nprovider: local\nwork_unit: UNIT-1\n---\n")
+    assert "schema" not in doc["metadata"]
     positions = [body.index(h) for h in HEADINGS]
     assert positions == sorted(positions)
     assert "## Dependencies" not in body and "## Risks" not in body

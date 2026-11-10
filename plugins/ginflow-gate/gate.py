@@ -100,7 +100,7 @@ def _document_error(card: dict, metadata: dict, target: Path) -> str | None:
              and link.startswith("docs/work-units/") and link.endswith(".md")]
     baseline = metadata.get("document_baseline")
     if not links and baseline is None:
-        return None  # legacy card: no provider document
+        return None  # card links no provider document (spec/plan card)
     if len(links) != 1:
         return "document_baseline requires exactly one linked docs/work-units/<KEY>.md document"
     if not isinstance(baseline, dict) or not all(baseline.get(n) for n in ("content_hash", "commit")):
