@@ -1,15 +1,12 @@
 #!/usr/bin/env python3
 """Focused blocker-reporting contract tests."""
-import importlib.util
+import importlib
 import sys
 from pathlib import Path
 
-MODULE = Path(__file__).with_name("blocker_reporting.py")
-spec = importlib.util.spec_from_file_location("blocker_reporting", MODULE)
-assert spec and spec.loader
-reporting = importlib.util.module_from_spec(spec)
-sys.modules[spec.name] = reporting
-spec.loader.exec_module(reporting)
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "plugins"))
+reporting = importlib.import_module("ginflow-gate.blocker_reporting")
 
 
 def event(kind: str = "transient"):

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """GINFLOW-MR-1: reviewer kanban_complete auto-publish, with fake gh/glab/hermes on PATH and a real git remote."""
-import importlib.util
+import importlib
 import json
 import os
 import subprocess
@@ -9,14 +9,10 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-path = ROOT / "plugins/ginflow-gate/__init__.py"
-spec = importlib.util.spec_from_file_location("ginflow_gate_publish_pkg", path, submodule_search_locations=[str(path.parent)])
-mod = importlib.util.module_from_spec(spec)
-sys.modules["ginflow_gate_publish_pkg"] = mod
-spec.loader.exec_module(mod)
-gate = sys.modules["ginflow_gate_publish_pkg.gate"]
-pub = sys.modules["ginflow_gate_publish_pkg.publish"]
-routing = sys.modules["ginflow_gate_publish_pkg.routing"]
+sys.path.insert(0, str(ROOT / "plugins"))
+gate = importlib.import_module("ginflow-gate.gate")
+pub = importlib.import_module("ginflow-gate.publish")
+routing = importlib.import_module("ginflow-gate.routing")
 
 FAKE = r'''#!/bin/sh
 echo "$(basename "$0") $*" >> "$FAKE_LOG"

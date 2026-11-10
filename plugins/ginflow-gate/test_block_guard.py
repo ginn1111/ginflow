@@ -1,17 +1,13 @@
 #!/usr/bin/env python3
 """kanban_block pre_tool_call guard: kind/required_action checks, trace-gated."""
-import importlib.util
+import importlib
 import os
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-path = ROOT / "plugins/ginflow-gate/__init__.py"
-spec = importlib.util.spec_from_file_location("ginflow_gate_guard_pkg", path, submodule_search_locations=[str(path.parent)])
-mod = importlib.util.module_from_spec(spec)
-sys.modules["ginflow_gate_guard_pkg"] = mod
-spec.loader.exec_module(mod)
-br = sys.modules["ginflow_gate_guard_pkg.block_routing"]
+sys.path.insert(0, str(ROOT / "plugins"))
+br = importlib.import_module("ginflow-gate.block_routing")
 br._load_task = lambda task_id, board: {"workspace_path": "/nonexistent"}
 
 
