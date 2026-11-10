@@ -15,7 +15,7 @@ PROFILES = ["default", "ginb", "gintary"]
 def project(extra=""):
     d = Path(tempfile.mkdtemp(prefix="ginflow-reviewer-")).resolve()
     (d / ".ginflow.yaml").write_text(
-        f"version: 1\nginflow:\n  board: b\n  workspace: {d}\n{extra}"
+        f"ginflow:\n  board: b\n  workspace: {d}\n{extra}"
     )
     return d
 

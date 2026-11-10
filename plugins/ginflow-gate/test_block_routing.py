@@ -75,7 +75,7 @@ def main():
 
         def write_config(extra):
             (project / ".ginflow.yaml").write_text(
-                f"version: 1\nginflow:\n  board: {BOARD}\n  workspace: {project}\n{extra}"
+                f"ginflow:\n  board: {BOARD}\n  workspace: {project}\n{extra}"
             )
 
         def block(kind, reason):

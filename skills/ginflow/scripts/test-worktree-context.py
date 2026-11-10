@@ -21,7 +21,7 @@ def main():
     for repo in (main_tree, other):
         repo.mkdir()
         git(repo, "init", "-q")
-        (repo / ".ginflow.yaml").write_text(f"version: 1\nginflow:\n  board: b\n  workspace: {main_tree}\n")
+        (repo / ".ginflow.yaml").write_text(f"ginflow:\n  board: b\n  workspace: {main_tree}\n")
         git(repo, "add", ".")
         git(repo, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "init")
     git(main_tree, "worktree", "add", "-q", "-b", "wt", str(worktree))

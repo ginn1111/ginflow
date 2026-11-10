@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Document provider config: strict validation, adaptive resolution, migration."""
+"""Document provider config: strict validation and adaptive resolution."""
 import importlib.util
 import subprocess
 import tempfile
@@ -19,7 +19,7 @@ LN = {"provider": "linear", "linear": {"team": T1, "project": P1}, "status_map":
 def project(documents=None, extra=""):
     d = Path(tempfile.mkdtemp(prefix="ginflow-docs-")).resolve()
     subprocess.run(["git", "init", "-q", str(d)], check=True)
-    (d / ".ginflow.yaml").write_text(f"version: 1\nginflow:\n  board: b\n  workspace: {d}\n{extra}")
+    (d / ".ginflow.yaml").write_text(f"ginflow:\n  board: b\n  workspace: {d}\n{extra}")
     if documents:
         pc.set_documents(d, documents)
     return d
@@ -39,7 +39,6 @@ def bad(block, needle):
 
 
 def main():
-    # config validation
     for ok in ({"provider": "adaptive"}, {"provider": "local"}, GH, LN):
         assert pc.documents_block_error(ok) is None, ok
     bad("x", "mapping")
@@ -54,21 +53,18 @@ def main():
     bad({**LN, "linear": {"team": "ENG"}}, "stable Linear ID")
     bad({**LN, "linear": {"project": P1}}, "team")
 
-    # save preserves unrelated keys, no credentials needed
     d = project(extra="  worker:\n    profile: p\n    provider: q\n    model: m\n")
     pc.set_documents(d, GH)
     data = pc.load_config(d)
     assert data["ginflow"]["worker"]["model"] == "m" and data["ginflow"]["documents"]["github"]["repo"] == "o/n"
     assert pc.documents_error(d) is None
     stops(lambda: pc.set_documents(d, {"provider": "x"}), "provider must be")
-    assert pc.load_config(d) == data  # failed save leaves file unchanged
+    assert pc.load_config(d) == data
 
-    # explicit provider report
     rep = pc.resolve_documents(project(LN))
     assert rep["effective"] == {"provider": "linear", "team": T1, "project": P1}, rep
     assert rep["destination"].startswith("linear:") and rep["readiness"] == "ready"
 
-    # adaptive: no evidence, precedence, conflict, linked, canonical refs
     d = project({"provider": "adaptive"})
     stops(lambda: pc.resolve_documents(d), "no ginflow-docs evidence")
     (d / "AGENTS.md").write_text("x\nginflow-docs: provider=github repo=a/b\n")
@@ -91,35 +87,24 @@ def main():
     stops(lambda: pc.resolve_documents(d, origin=lambda w: None), "GitHub repo")
     assert pc.resolve_documents(d, origin=lambda w: "x/y")["effective"]["repo"] == "x/y"
 
-    # Linear name resolution via injected resolver
     (d / "AGENTS.md").write_text("ginflow-docs: provider=linear team=ENG\n")
     stops(lambda: pc.resolve_documents(d), "stable ID")
     rep = pc.resolve_documents(d, linear_resolver=lambda kind, name: T1)
     assert rep["effective"] == {"provider": "linear", "team": T1}
     stops(lambda: pc.resolve_documents(d, linear_resolver=lambda k, n: "not-an-id"), "stable ID")
 
-    # readiness fails closed; save never needs it
     assert pc.resolve_documents(project(GH), readiness=lambda p: "run gh auth login")["readiness"] == "run gh auth login"
     stops(lambda: pc.require_ready("github", lambda p: "run gh auth login"), "gh auth login")
     pc.require_ready("github", lambda p: None)
     pc.require_ready("local", lambda p: "never")
 
-    # migration: preview, approval, backup, ignored, malformed stays read-only
     d = project()
-    (d / ".ginflow.yaml").write_text("version: 0\nboard: old\n")
-    new = {"version": 1, "ginflow": {"board": "b", "workspace": str(d), "documents": GH}}
-    stops(lambda: pc.set_documents(d, GH), "version")
-    preview = pc.preview_migration(d, new)
-    assert "-version: 0" in preview and "+version: 1" in preview
+    text = (d / ".ginflow.yaml").read_text()
+    (d / ".ginflow.yaml").write_text("version: " + "1\n" + text)
     before = (d / ".ginflow.yaml").read_text()
-    stops(lambda: pc.apply_migration(d, new, approved=False), "approval")
+    assert pc.context_error(d) == "project config has unknown top-level keys: version"
+    stops(lambda: pc.set_documents(d, GH), "unknown top-level keys")
     assert (d / ".ginflow.yaml").read_text() == before
-    backup = pc.apply_migration(d, new, approved=True, now=lambda: "20260101T000000Z")
-    assert backup.read_text() == before and backup.parent == d / ".ginflow" / "migrations"
-    assert pc.context_error(d) is None and pc.documents_error(d) is None
-    ignored = subprocess.run(["git", "-C", str(d), "check-ignore", "-q", str(backup)])
-    assert ignored.returncode == 0
-    stops(lambda: pc.apply_migration(d, {"version": 1, "ginflow": {"documents": {"provider": "x"}}}, approved=True), "provider must be")
     print("PASS: document config")
 
 

@@ -48,7 +48,7 @@ with tempfile.TemporaryDirectory() as tmp:
     (repo / "docs/specs").mkdir(parents=True)
     (repo / "docs/specs/P-1.md").write_text("---\nstatus: completed\n---\n# P\n")
     (repo / ".ginflow.yaml").write_text(
-        f"version: 1\nginflow:\n  board: b\n  workspace: {repo}\n  reviewer:\n    profile: gintary\n"
+        f"ginflow:\n  board: b\n  workspace: {repo}\n  reviewer:\n    profile: gintary\n"
         "  publish:\n    provider: github\n    target: main\n")
     git("add", ".", cwd=repo)
     git("commit", "-qm", "base", cwd=repo)

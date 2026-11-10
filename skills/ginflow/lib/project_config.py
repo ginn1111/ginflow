@@ -16,7 +16,6 @@ except ImportError:  # pragma: no cover - exercised when PyYAML is absent
 _PARSE_ERRORS = (OSError, ValueError) + ((yaml.YAMLError,) if yaml else ())
 
 CONFIG_RELATIVE_PATH = Path(".ginflow.yaml")
-CONFIG_VERSION = 1
 WORKER_FIELDS = ("profile", "provider", "model")
 
 
@@ -105,8 +104,11 @@ def context_error(workspace: Path) -> str | None:
         data = _loads(path.read_text(encoding="utf-8"))
     except _PARSE_ERRORS as exc:
         return f"project config is malformed: {exc}"
-    if not isinstance(data, dict) or data.get("version") != CONFIG_VERSION:
-        return f"project config must declare version: {CONFIG_VERSION}"
+    if not isinstance(data, dict):
+        return "project config must be a mapping"
+    unknown = set(data) - {"ginflow"}
+    if unknown:
+        return "project config has unknown top-level keys: " + ", ".join(sorted(unknown))
     context = data.get("ginflow")
     if not isinstance(context, dict):
         return "project config is missing the ginflow mapping"
@@ -598,10 +600,7 @@ def _atomic_write(path: Path, text: str) -> None:
 
 
 def set_documents(workspace: Path, documents: Mapping[str, Any]) -> Path:
-    """Save a valid documents block into a valid config, preserving other keys.
-
-    No credentials needed. Outdated/malformed configs use the migration API.
-    """
+    """Save a valid documents block into a valid config, preserving other keys."""
     workspace = Path(workspace).expanduser().resolve()
     error = context_error(workspace) or documents_block_error(dict(documents))
     if error:
@@ -610,65 +609,6 @@ def set_documents(workspace: Path, documents: Mapping[str, Any]) -> Path:
     data["ginflow"] = {**data["ginflow"], "documents": dict(documents)}
     _atomic_write(config_path(workspace), _dumps(data))
     return config_path(workspace)
-
-
-def preview_migration(workspace: Path, new_config: Mapping[str, Any]) -> str:
-    """Unified diff of current config text versus the proposed one; writes nothing."""
-    import difflib
-
-    path = config_path(workspace)
-    old = path.read_text(encoding="utf-8") if path.exists() else ""
-    return "".join(difflib.unified_diff(
-        old.splitlines(True), _dumps(new_config).splitlines(True), ".ginflow.yaml", ".ginflow.yaml (proposed)"))
-
-
-def _ensure_ignored(workspace: Path) -> None:
-    probe = subprocess.run(["git", "-C", str(workspace), "check-ignore", "-q", ".ginflow/x"], capture_output=True)
-    if probe.returncode == 0:
-        return
-    out = subprocess.run(
-        ["git", "-C", str(workspace), "rev-parse", "--git-path", "info/exclude"],
-        text=True, capture_output=True,
-    )
-    if out.returncode:
-        return
-    exclude = Path(out.stdout.strip())
-    exclude = exclude if exclude.is_absolute() else workspace / exclude
-    exclude.parent.mkdir(parents=True, exist_ok=True)
-    with exclude.open("a", encoding="utf-8") as handle:
-        handle.write("\n.ginflow/\n")
-
-
-def apply_migration(
-    workspace: Path, new_config: Mapping[str, Any], *, approved: bool, now: Callable[[], str] | None = None
-) -> Path | None:
-    """Write proposed config after explicit approval; returns backup path (None if no prior file).
-
-    Backup is the prior config only, under ignored ``.ginflow/migrations/``.
-    """
-    import datetime
-
-    workspace = Path(workspace).expanduser().resolve()
-    if approved is not True:
-        raise DocumentConfigError("migration requires explicit approval; review preview_migration output")
-    ginflow = new_config.get("ginflow")
-    if new_config.get("version") != CONFIG_VERSION or not isinstance(ginflow, dict):
-        raise DocumentConfigError("proposed config must declare version and ginflow mapping")
-    if "documents" in ginflow:
-        error = documents_block_error(ginflow["documents"])
-        if error:
-            raise DocumentConfigError(error)
-    path = config_path(workspace)
-    backup = None
-    if path.exists():
-        stamp = now() if now else datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
-        folder = workspace / ".ginflow" / "migrations"
-        folder.mkdir(parents=True, exist_ok=True)
-        backup = folder / f"{stamp}-.ginflow.yaml"
-        backup.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
-        _ensure_ignored(workspace)
-    _atomic_write(path, _dumps(new_config))
-    return backup
 
 
 def context_mismatch(workspace: Path) -> str | None:
@@ -719,7 +659,7 @@ def persist_context(workspace: Path, *, board: str | None) -> Path | None:
     if path.exists():
         return None
     path.parent.mkdir(parents=True, exist_ok=True)
-    payload = {"version": CONFIG_VERSION, "ginflow": {"board": board, "workspace": str(workspace)}}
+    payload = {"ginflow": {"board": board, "workspace": str(workspace)}}
     temporary = path.with_name(path.name + ".tmp")
     try:
         temporary.write_text(_dumps(payload), encoding="utf-8")
@@ -823,4 +763,4 @@ def initialize_context(
     return persisted
 
 
-__all__ = ["DOC_PROVIDERS", "STATUS_KEYS", "DocumentConfigError", "apply_migration", "configured_documents", "documents_block_error", "documents_error", "preview_migration", "require_ready", "resolve_documents", "set_documents", "ReviewerConfigError", "configured_reviewer", "configured_publish", "publish_error", "hermes_default_reviewer", "installed_profiles", "reviewer_error", "seed_default_reviewer", "CONFIG_RELATIVE_PATH", "CONFIG_VERSION", "WORKER_FIELDS", "ContextInitializationError", "WorkerDefaultsError", "active_board", "config_exists", "config_path", "configured_context", "configured_worker", "context_error", "context_mismatch", "initialize_context", "load_config", "persist_context", "persist_worker_defaults", "resolve_board", "resolve_worker_dispatch", "worker_error"]
+__all__ = ["DOC_PROVIDERS", "STATUS_KEYS", "DocumentConfigError", "configured_documents", "documents_block_error", "documents_error", "require_ready", "resolve_documents", "set_documents", "ReviewerConfigError", "configured_reviewer", "configured_publish", "publish_error", "hermes_default_reviewer", "installed_profiles", "reviewer_error", "seed_default_reviewer", "CONFIG_RELATIVE_PATH", "WORKER_FIELDS", "ContextInitializationError", "WorkerDefaultsError", "active_board", "config_exists", "config_path", "configured_context", "configured_worker", "context_error", "context_mismatch", "initialize_context", "load_config", "persist_context", "persist_worker_defaults", "resolve_board", "resolve_worker_dispatch", "worker_error"]
