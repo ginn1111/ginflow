@@ -57,6 +57,15 @@ except ImportError:
     _trace_spec.loader.exec_module(_trace_module)
     trace = _trace_module.trace
 
+try:
+    from . import publish as _publish
+except ImportError:
+    _publish_spec = importlib.util.spec_from_file_location("ginflow_gate_publish", Path(__file__).with_name("publish.py"))
+    if not _publish_spec or not _publish_spec.loader:
+        raise ImportError("unable to load publish adapter")
+    _publish = importlib.util.module_from_spec(_publish_spec)
+    _publish_spec.loader.exec_module(_publish)
+
 
 def _harness_core_path() -> Path:
     plugin = Path(__file__).resolve()
@@ -170,9 +179,10 @@ def validate_completion(card: dict, metadata: dict) -> str | None:
         return "verification_result.commit must match artifact_baseline.commit"
 
     workspace = str(card["workspace"])
-    if not workspace.startswith("dir:"):
+    kind, _, path = workspace.partition(":")
+    if kind not in ("dir", "worktree") or not path:
         return f"unsupported workspace for completion validation: {workspace}"
-    target = Path(workspace.removeprefix("dir:")).resolve()
+    target = Path(path).resolve()
 
     incomplete = linked_documents_missing_completion(card, target)
     if incomplete:
@@ -214,10 +224,16 @@ def pre_tool_call(tool_name: str, args: dict, task_id: str = "", **kwargs):
         error = validate_completion(card, metadata)
         if error:
             return _block(error)
+        if tool_name == "kanban_complete":
+            board = args.get("board") or os.environ.get("HERMES_KANBAN_BOARD")
+            error = _publish.prepare(selected, card, metadata, board, _project_config, kwargs)
+            if error:
+                return _block(error)
         # Hermes has no default reviewer setting: inject ginflow.reviewer.profile.
         if tool_name == "kanban_request_review" and not args.get("reviewer"):
             workspace = str(card.get("workspace") or "")
-            reviewer = _project_config.configured_reviewer(Path(workspace.removeprefix("dir:"))) if workspace.startswith("dir:") else None
+            kind, _, path = workspace.partition(":")
+            reviewer = _project_config.configured_reviewer(Path(path)) if kind in ("dir", "worktree") and path else None
             if reviewer:
                 return {"action": "modify", "args": {"reviewer": reviewer}}
         return None
@@ -227,7 +243,13 @@ def pre_tool_call(tool_name: str, args: dict, task_id: str = "", **kwargs):
 
 @trace
 def post_tool_call(tool_name: str, result: dict, args: dict, task_id: str = "", **kwargs):
-    """Retained compatibility hook; linked documents are finalized before completion."""
+    """Publish MR/PR after a reviewer kanban_complete prepared in pre_tool_call; observer only."""
+    if tool_name == "kanban_complete":
+        selected = str((args or {}).get("task_id") or task_id or os.environ.get("HERMES_KANBAN_TASK") or "").strip()
+        try:
+            _publish.finish(selected, result, kwargs)
+        except Exception:
+            pass
     return None
 
 

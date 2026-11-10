@@ -59,6 +59,7 @@ core-test:
 	python3 core/ginflow-core/test_review_cycle.py
 	python3 core/ginflow-core/test_followup.py
 	python3 core/ginflow-core/test_merge_request.py
+	python3 core/ginflow-core/test_publish.py
 	python3 core/ginflow-core/test_initiative_workflow.py
 
 # ponytail: keep core tests as direct scripts until shared repository test runner exists.
@@ -81,6 +82,7 @@ plugin-test:
 	python3 plugins/ginflow-gate/test_recovery.py
 	python3 plugins/ginflow-gate/test_reviewer_injection.py
 	python3 plugins/ginflow-gate/test_block_guard.py
+	python3 plugins/ginflow-gate/test_publish_hook.py
 	@if command -v hermes >/dev/null 2>&1; then python3 plugins/ginflow-gate/test_block_routing.py; else echo "SKIP: block routing (hermes CLI not installed)"; fi
 	@if command -v hermes >/dev/null 2>&1; then python3 plugins/ginflow-gate/test_native_review_transition.py; else echo "SKIP: native review transition (hermes CLI not installed)"; fi
 	$(MAKE) trace-test

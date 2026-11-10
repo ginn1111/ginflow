@@ -73,6 +73,19 @@ _workspace = _routing_core.workspace
 _resolve_board = _core.resolve_board
 _context_error = _core.context_error
 _config_exists = _core.config_exists
+_publish_config_spec = importlib.util.spec_from_file_location("ginflow_routing_project_config", CORE.with_name("project_config.py"))
+if not _publish_config_spec or not _publish_config_spec.loader:
+    raise ImportError("unable to load Ginflow project config")
+_publish_config = importlib.util.module_from_spec(_publish_config_spec)
+_publish_config_spec.loader.exec_module(_publish_config)
+try:
+    from . import publish as _publish
+except ImportError:
+    _publish_spec = importlib.util.spec_from_file_location("ginflow_routing_publish", Path(__file__).with_name("publish.py"))
+    if not _publish_spec or not _publish_spec.loader:
+        raise ImportError("unable to load publish adapter")
+    _publish = importlib.util.module_from_spec(_publish_spec)
+    _publish_spec.loader.exec_module(_publish)
 
 logger = logging.getLogger(__name__)
 
@@ -267,6 +280,20 @@ def _is_legacy_v1_card(task: dict[str, Any]) -> bool:
     return metadata.get("legacy_v1") is True
 
 
+def _publish_route(current: Path) -> tuple[str, str] | None:
+    """Startup check: configured publish CLI must be authenticated before work starts."""
+    error = _publish_config.publish_error(current)
+    config = None if error else _publish_config.configured_publish(current)
+    if not error and config:
+        error = _publish.auth_error(config, cwd=current)
+    if not error:
+        return None
+    return "publish_unavailable", (
+        f"`ginflow.publish` cannot run: {error}. Fix `.ginflow.yaml` or authenticate "
+        "the provider CLI before execution; reviewer completion is blocked until it passes."
+    )
+
+
 def _project_config_route(current: Path) -> tuple[str, str] | None:
     """Return a mutation-blocking route when project context is unusable."""
     error = _context_error(current)
@@ -282,7 +309,7 @@ def _project_config_route(current: Path) -> tuple[str, str] | None:
             "the project context by choosing the current/default board or creating "
             "a new board before continuing."
         )
-    return None
+    return _publish_route(current)
 
 
 @trace
