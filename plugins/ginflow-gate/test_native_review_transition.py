@@ -9,6 +9,11 @@ import sys
 import tempfile
 from pathlib import Path
 
+# Isolate from an outer Kanban worker: its pinned board DB and write fence would leak into live fixtures.
+for _key in [k for k in os.environ if k.startswith(("HERMES_KANBAN_", "HERMES_DELEGATED_"))]:
+    del os.environ[_key]
+
+
 ROOT = Path(__file__).resolve().parents[2]
 BOARD = "ginflow-review-testing"
 BODY = (

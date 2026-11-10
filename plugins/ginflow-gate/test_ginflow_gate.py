@@ -14,6 +14,11 @@ PLUGIN = ROOT / "plugins/ginflow-gate/routing.py"
 TEST_BOARD = "ginflow-testing"
 
 import sys
+
+# Isolate from an outer Kanban worker: its pinned board DB and write fence would leak into live fixtures.
+for _key in [k for k in os.environ if k.startswith(("HERMES_KANBAN_", "HERMES_DELEGATED_"))]:
+    del os.environ[_key]
+
 sys.path.insert(0, str(ROOT / "plugins"))
 module = importlib.import_module("ginflow-gate.routing")
 
