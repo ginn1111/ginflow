@@ -2,8 +2,8 @@
 
 Project `app`, work key `APP-9`.
 
-1. Startup: `.ginflow.yaml` exists, board `app`. Read `.hermes.md`. No card selected, so route to Discovery/Shaping.
-2. Shaping: draft `docs/specs/APP-9.md` and `docs/plans/APP-9.md` (frontmatter `status: draft`).
+1. Startup: `.ginflow.yaml` exists, board `app`. Read `.hermes.md`. No card selected, so route to shaping.
+2. Shape: draft `docs/specs/APP-9.md` and `docs/plans/APP-9.md` (frontmatter `status: draft`).
 3. Create card blocked, assigned to current profile, links future artifacts:
 
 ```text

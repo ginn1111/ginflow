@@ -76,7 +76,7 @@ Edit `.hermes.md` and set the project's canonical verification command. Never co
 
 1. Open Hermes in the target repository.
 2. Run `/ginflow`. On first load it asks which Kanban board to use and writes `.ginflow.yaml`.
-3. State your goal. Ginflow runs Discovery, then Shaping, and asks you to approve one Execution Package.
+3. State your goal. Ginflow shapes `docs/specs/<KEY>.md` and `docs/plans/<KEY>.md` and asks you to approve them.
 4. Execution runs the resulting Kanban cards. Workers finish with `kanban_request_review`; `ginflow-gate` checks evidence at that call and at `kanban_complete`.
 
 Lifecycle detail: [ginflow-flow.md](../architecture/ginflow-flow.md).

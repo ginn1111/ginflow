@@ -1,6 +1,6 @@
 ---
 name: ginflow
-description: Use when starting, resuming, or finishing work in a project under Hermes Kanban. Triggers - "start a task", "new Initiative", "discovery", "shape the work", "execution package", "decision phase", "review cycle", "create a Kanban card", "complete the card", "hand off", "export handoff", "where do docs go". Governs Initiative lifecycle (Discovery, Shaping, Execution, Decision), card format, evidence, and stop rules.
+description: Use when starting, resuming, or finishing work in a project under Hermes Kanban. Triggers - "start a task", "shape the work", "spec-first flow", "create a Kanban card", "complete the card", "hand off", "export handoff", "where do docs go". Governs spec-first flow (shape, cards, execute, review, PR), card format, evidence, and stop rules.
 ---
 
 # ginflow
@@ -12,25 +12,25 @@ Never use setup repo as workspace. Never copy harness into target repo.
 ## When to use
 
 - starting, resuming, or closing target-project work
-- shaping a Kanban card or Execution Package
+- shaping a Kanban card or its spec/plan
 - deciding where docs belong
 - exporting a session handoff
 - blank project setup
 
-## Four-phase Initiative lifecycle
+## Spec-first flow
 
-One stable Initiative per large autonomous effort. Terms: `GLOSSARY.md`.
-
-| Phase | Does | Card needed |
+| Step | Does | Card needed |
 | --- | --- | --- |
-| Discovery | frame problem, boundaries, vocabulary, open questions; record approved Shaping handoff | no |
-| Shaping | approve artifact-first Execution Package (spec, plan, Tickets) | no |
-| Execution | immutable `execution_batch`; create blocked cards; work inside card scope | yes |
-| Decision | read-only human review after Integration; only `approved_for_mr` completes lifecycle | n/a |
+| Shape | write `docs/specs/<KEY>.md` + `docs/plans/<KEY>.md`; approve | no |
+| Cards | create blocked cards linking the artifacts | no |
+| Execute | work inside card scope | yes |
+| Review | `kanban_request_review`; reviewer `kanban_complete` | yes |
+| PR | gate auto-publishes the PR | n/a |
+| Feedback | PR feedback becomes new cards | n/a |
 
-Discovery and Shaping may write Initiative artifacts but never mutate product code or dispatch. Decision steps: `references/decision.md`.
+Shaping may write artifacts but never mutates product code or dispatches. Terms: `GLOSSARY.md`. Decision: `docs/adrs/0002-spec-first-cards.md`.
 
-No selected/running card owns the workspace: route new work to Discovery/Shaping. No selected card blocks project execution.
+No selected/running card owns the workspace: route new work to shaping. No selected card blocks project execution.
 
 ## Doc layout
 
@@ -69,7 +69,7 @@ Execution startup, in order:
 
 1. Confirm workspace is the real target repo.
 2. Read `.hermes.md`, then `AGENTS.md`.
-3. Board empty: route to Discovery/Shaping. Else `kanban_list`/`kanban_show`, resume selected card.
+3. Board empty: route to shaping. Else `kanban_list`/`kanban_show`, resume selected card.
 4. Execution requires a selected card. Stop if absent.
 5. Confirm card fields: ID, title, objective, scope, acceptance, workspace, status, assignee, links. Stop if any missing.
 6. Read linked spec/plan.
@@ -78,12 +78,12 @@ Execution startup, in order:
 9. Run external harness against target and card. Report project verification and harness separately.
 10. Follow routing context injected by `ginflow-gate`.
 
-Routing hints from the plugin are advisory, not authorization. Call `skill_view` yourself. Precedence: target rules, Initiative/card contract, Ginflow matrix, selected skill, skill defaults.
+Routing hints from the plugin are advisory, not authorization. Call `skill_view` yourself. Precedence: target rules, card contract, Ginflow matrix, selected skill, skill defaults.
 
 ## Execution contract
 
 - One active card per mutable workspace. Parallel cards need an isolated worktree or different workspace.
-- Execution requires a package-derived card and immutable batch.
+- Execution requires a selected card.
 - Stay in card scope and target workspace. Use project-native commands.
 - Block on material ambiguity; do not invent requirements.
 - Do not resume or derive work from a completed card with unresolved drift. Unrelated cards and unlinked project work may continue.
@@ -122,7 +122,7 @@ Build-ready card answers: what to change, where, how done is judged, what not to
 - [ ] Acceptance criteria satisfied.
 - [ ] Relevant project checks ran and passed.
 - [ ] Changed files reviewed against scope.
-- [ ] Card records verification evidence; Initiative records Decision/MR evidence.
+- [ ] Card records verification evidence.
 - [ ] Hermes status accurate.
 - [ ] Linked artifacts reflect completion.
 - [ ] Restartable from documented verification path.
@@ -178,7 +178,7 @@ Stop and clarify when:
 
 ## References
 
-- `references/decision.md`, `references/completion.md`, `references/handoff-export.md`, `references/example-flow.md`
+- `references/completion.md`, `references/handoff-export.md`, `references/example-flow.md`
 - `references/doc-layout.md`, `references/kanban-guide.md`, `references/drift-detect.md`
 - `references/project-context.md`, `references/blank-project-checklist.md`
 - `references/workspace-health-warnings.md`

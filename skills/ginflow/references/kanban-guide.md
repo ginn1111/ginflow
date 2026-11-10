@@ -2,7 +2,7 @@
 
 ## Gate
 
-Pre-card work (Discovery and Shaping) may brainstorm, inspect read-only context, draft package artifacts, and draft card content. Execution requires one selected card before implementation investigation, code change, dispatch, progress, verification, completion, or handoff.
+Pre-card work (shaping) may brainstorm, inspect read-only context, draft package artifacts, and draft card content. Execution requires one selected card before implementation investigation, code change, dispatch, progress, verification, completion, or handoff.
 
 No selected card blocks execution. Selected card requires ID, title, objective, scope, acceptance, workspace, status, assignee, and links. Missing field blocks execution until repaired.
 
@@ -72,7 +72,7 @@ Do not leave project work in scratch workspace if files must be read from repo.
 
 ## Feedback boundary
 
-Decision notifications use the pure `notification` contract; transport remains adapter-owned.
+Notification transport remains adapter-owned.
 
 ## Task notifications
 
