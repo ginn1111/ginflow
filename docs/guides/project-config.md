@@ -22,6 +22,27 @@ Optional `ginflow.reviewer.profile` must name an installed Hermes profile; unkno
 
 Set `ginflow.trace: true` to enable optional `ginflow-trace` logging under `<workspace>/.ginflow/logs/` (errors under `.ginflow/errors/`). `GINFLOW_LOG=1` enables tracing for one process; any other set value disables it. Trace defaults off and never falls back to setup-repo paths.
 
+## Auto-publish (`ginflow.publish`)
+
+Optional. When present, the configured `ginflow.reviewer.profile` calling `kanban_complete` on a `worktree:` card pushes the reviewed commit and opens a PR/MR without further approval. Merge stays human.
+
+```yaml
+ginflow:
+  reviewer:
+    profile: gintary
+  publish:
+    provider: github        # github | gitlab
+    target: develop         # branch the MR/PR targets
+    remote: origin          # optional
+    host: gitlab.internal   # optional; scopes `glab/gh auth status --hostname`
+    draft: false            # optional
+```
+
+- Startup: routing reports `route=publish_unavailable` (mutation blocked) while the provider CLI is unauthenticated or the block is malformed.
+- Pre-completion: reviewer `kanban_complete` is blocked on auth failure or missing `branch_name`, so a card never reaches done without an MR.
+- Post-completion: `git push <remote> <verification commit>:refs/heads/<branch>` (never force), reuse an open MR/PR for the branch or create one, then comment `ginflow-publish: <url>` on the card. Failures comment `ginflow-publish failed: ...` and never undo completion; rerun is idempotent.
+- `dir:` cards and non-reviewer profiles are untouched.
+
 ## Completion evidence
 
 Evidence stays split:

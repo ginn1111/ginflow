@@ -25,6 +25,6 @@ Terms: see `GLOSSARY.md` (Initiative, Execution Batch, Integration, Change Group
 | `reshape_required` | back to Shaping |
 | `stopped` | halt, no MR |
 
-Publication and merge are separate steps, never implied by `approved_for_mr`.
+Publication and merge are separate steps, never implied by `approved_for_mr`. Exception: with `ginflow.publish` configured, reviewer `kanban_complete` on a worktree card auto-publishes the MR/PR (`ginflow-gate`); merge stays human. See `docs/guides/project-config.md` in the setup repo.
 
 Material outcomes emit a `notification` envelope. Transport is adapter-owned; do not send messages yourself.

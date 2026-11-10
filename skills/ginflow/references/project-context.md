@@ -16,6 +16,9 @@ ginflow:
     provider: <provider name>
     model: <model name>
   trace: false # optional; enables ginflow-trace function logging for this project
+  publish:     # optional; reviewer kanban_complete auto-opens MR/PR
+    provider: github   # github | gitlab
+    target: develop
 ```
 
 The resolved workspace is the target directory passed to verification. Board precedence is:
