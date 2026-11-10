@@ -15,7 +15,7 @@ BOARD = "ginflow-block-routing"
 BODY = "Objective: x\nScope:\n- x\nAcceptance:\n- x\nLinks:\n- docs/specs/X-1.md"
 REAL_HERMES = shutil.which("hermes")
 STUB = f"""#!/bin/sh
-if [ "$1" = "send" ]; then
+if [ "$1" = "send" ] || [ "$1 $3" = "-p send" ]; then
   [ -f "$STUB_FAIL" ] && exit 1
   printf '%s\\n' "$*" >> "$STUB_LOG"
   exit 0
@@ -86,8 +86,8 @@ def main():
             hermes(env, "kanban", "--board", BOARD, "block", tid, reason, *(["--kind", kind] if kind else []))
             return tid
 
-        def fire(tid, reason):
-            hook(task_id=tid, board=BOARD, assignee="ginb", run_id=7, reason=reason)
+        def fire(tid, reason, assignee="ginb"):
+            hook(task_id=tid, board=BOARD, assignee=assignee, run_id=7, reason=reason)
             return log.read_text().splitlines() if log.exists() else []
 
         def status(tid):
@@ -133,9 +133,10 @@ def main():
         t = block("transient", "flaky net\nretry")
         assert len(fire(t, "flaky net\nretry")) == before
         data = show(t)
-        note = [c["body"] for c in data["comments"] if c["body"].startswith("[ginflow]")]
+        note = [c["body"] for c in data["comments"] if c["body"].startswith("[ginflow-recovery]")]
         assert len(note) == 1 and all(x in note[0] for x in (
-            "origin=worker", "profile=ginb", "run=7", "kind=transient", "flaky net retry")), note
+            "event=7:1", "kind=transient", "recurrences=1/2", "decision=reassign")), note
+        assert "flaky" not in note[0]
         assert data["task"]["assignee"] == "repairer" and data["task"]["status"] in ("ready", "todo"), data["task"]
         # trace on, no reviewer configured: no reassign, escalated like a critical block
         write_config("  trace: true\n  notify:\n    target: telegram:123\n")
@@ -193,19 +194,19 @@ def main():
         assert status(t) == "blocked"
         (tmp / "fail").unlink()
 
-        # second transient block on same task: critical push, no reassign, still blocked
+        # second transient block: Hermes routes to triage; one send as reviewer profile, no reassign
         write_config("  trace: true\n  notify:\n    target: telegram:1\n" + reviewer)
         t = block("transient", "flaky")
-        n = len(fire(t, "flaky"))  # first: auto-repair, no send
+        n = len(fire(t, "flaky"))  # first: auto-recovery, no send
         assert show(t)["task"]["assignee"] == "repairer"
         hermes(env, "kanban", "--board", BOARD, "claim", t)
         hermes(env, "kanban", "--board", BOARD, "block", t, "flaky again", "--kind", "transient")
-        got = fire(t, "flaky again")
-        assert len(got) == n + 1 and got[-1].startswith("send --to telegram:1 -q ") and "flaky again" in got[-1], got[n:]
+        assert status(t) == "triage", status(t)
+        got = fire(t, "flaky again", "repairer")
+        assert len(got) == n + 1 and got[-1].startswith("-p repairer send --to telegram:1 -q ") and "flaky again" in got[-1], got[n:]
         data = show(t)
-        # hook never unblocks/reassigns; Hermes core may itself escalate a re-blocked task to triage
-        assert data["task"]["assignee"] == "repairer" and data["task"]["status"] in ("blocked", "triage"), data["task"]
-        assert len([c for c in data["comments"] if c["body"].startswith("[ginflow] origin=worker")]) == 1
+        assert data["task"]["assignee"] == "repairer" and data["task"]["status"] == "triage", data["task"]
+        assert len([c for c in data["comments"] if c["body"].startswith("[ginflow-recovery]")]) == 1
 
         # hook failure (hermes send missing/erroring) never raises
         write_config("  trace: true\n  notify:\n    target: telegram:1\n")

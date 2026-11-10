@@ -452,7 +452,7 @@
         <mxCell id="ginflow-cleanup-lib" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="skills/ginflow/lib&lt;br/&gt;single core home (skill_lib.load)" vertex="1">
           <mxGeometry height="60" width="200" x="2250" y="340" as="geometry" />
         </mxCell>
-        <mxCell id="ginflow-cleanup-unwired" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" value="Not wired: initiative · execution_package · execution_batch · card_creation · decision · review_cycle · merge_request · followup · recovery_policy · feedback" vertex="1">
+        <mxCell id="ginflow-cleanup-unwired" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" value="Not wired: initiative · execution_package · execution_batch · card_creation · decision · review_cycle · merge_request · followup" vertex="1">
           <mxGeometry height="60" width="420" x="2140" y="440" as="geometry" />
         </mxCell>
         <mxCell id="ginflow-cleanup-e1" edge="1" parent="1" source="3OxK573chlKwpl4-sLJv-36" target="ginflow-cleanup-block-routing" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">

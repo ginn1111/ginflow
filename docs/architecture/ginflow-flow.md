@@ -74,7 +74,7 @@ Hermes Kanban remains lifecycle authority throughout. Details: [ADR 0001](../adr
 | `post_tool_call` | `gate.post_tool_call` | publish finish (push + MR/PR) after reviewer `kanban_complete` |
 | `kanban_task_blocked` | `block_routing.on_task_blocked` | transient auto-repair once; critical push to notify target |
 
-Not wired yet: `feedback` and `recovery_policy` helpers exist in `plugins/ginflow-gate/` but are not registered as hooks.
+Block recovery: `recovery_policy`, `blocker_reporting` and `feedback` run inside the `kanban_task_blocked` hook (see `skills/ginflow/references/trace-routing.md`).
 
 ## Derived flow
 

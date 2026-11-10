@@ -1,5 +1,5 @@
 ---
-status: draft
+status: completed
 scope: plugins/ginflow-gate/{block_routing,blocker_reporting,recovery_policy,feedback}.py + tests; docs/architecture/integration-status.md; skills/ginflow/references/trace-routing.md
 owner: ginb
 ---

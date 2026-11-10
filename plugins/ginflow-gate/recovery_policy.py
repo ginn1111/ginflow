@@ -1,13 +1,12 @@
-"""Pure, fail-closed bounded recovery decisions for blocked cards."""
+"""Pure, fail-closed recovery decisions for blocked cards on Hermes block state."""
 from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from .blocker_reporting import MAX_ATTEMPTS, NON_RECOVERABLE_KINDS
+from .blocker_reporting import BLOCK_RECURRENCE_LIMIT, BLOCKER_KINDS, HUMAN_KINDS, STATUSES
 
-RECOVERABLE_KINDS = frozenset({"transient", "unknown"})
 TERMINAL_STATUSES = frozenset({"done", "cancelled", "archived"})
 _REQUIRED_EVENT_FIELDS = (
     "event_id",
@@ -16,8 +15,9 @@ _REQUIRED_EVENT_FIELDS = (
     "workspace",
     "previous_assignee",
     "blocker_kind",
-    "attempt",
-    "max_attempts",
+    "recurrences",
+    "limit",
+    "status",
     "recovery_candidate",
     "decision",
     "decision_owner",
@@ -31,7 +31,7 @@ class RecoveryDecision:
 
     action: str
     reason: str
-    attempt: int
+    recurrences: int
     idempotency_key: str | None = None
     target_assignee: str | None = None
 
@@ -49,12 +49,13 @@ def _valid_event(event: Any) -> bool:
     )
     if not all(_text(event.get(field)) for field in text_fields):
         return False
-    attempt = event.get("attempt")
+    recurrences = event.get("recurrences")
     return (
-        isinstance(attempt, int)
-        and not isinstance(attempt, bool)
-        and attempt >= 0
-        and event.get("max_attempts") == MAX_ATTEMPTS
+        isinstance(recurrences, int)
+        and not isinstance(recurrences, bool)
+        and recurrences >= 1
+        and event.get("limit") == BLOCK_RECURRENCE_LIMIT
+        and event.get("status") in STATUSES
         and isinstance(event.get("recovery_candidate"), bool)
         and event.get("event_type") == "blocked"
         and event.get("decision") == "pending"
@@ -70,6 +71,7 @@ def evaluate_recovery(
     current_workspace: str,
     current_assignee: str | None,
     current_status: str,
+    reviewer: str | None = None,
     processed_keys: set[str] | frozenset[str] | None = None,
 ) -> RecoveryDecision:
     """Evaluate one event without mutating the event or card state."""
@@ -77,49 +79,40 @@ def evaluate_recovery(
         return RecoveryDecision("stay_blocked", "malformed_safety_state", 0)
 
     key = event["idempotency_key"]
-    attempt = event["attempt"]
+    n = event["recurrences"]
     if key in (processed_keys or set()):
-        return RecoveryDecision("skip", "already_processed", attempt, key)
+        return RecoveryDecision("skip", "already_processed", n, key)
     if event["card_id"] != current_card_id:
-        return RecoveryDecision("stay_blocked", "card_mismatch", attempt, key)
+        return RecoveryDecision("stay_blocked", "card_mismatch", n, key)
 
     expected_workspace = str(Path(current_workspace).expanduser().resolve())
     event_workspace = str(Path(event["workspace"]).expanduser().resolve())
     if event_workspace != expected_workspace:
-        return RecoveryDecision("stay_blocked", "workspace_mismatch", attempt, key)
+        return RecoveryDecision("stay_blocked", "workspace_mismatch", n, key)
     if current_status in TERMINAL_STATUSES:
-        return RecoveryDecision("stay_blocked", "terminal_card", attempt, key)
-    if current_status != "blocked":
-        return RecoveryDecision("stay_blocked", "invalid_state", attempt, key)
+        return RecoveryDecision("stay_blocked", "terminal_card", n, key)
+    if current_status not in STATUSES:
+        return RecoveryDecision("stay_blocked", "invalid_state", n, key)
     if not current_assignee:
-        return RecoveryDecision("stay_blocked", "missing_worker", attempt, key)
+        return RecoveryDecision("stay_blocked", "missing_worker", n, key)
     if current_assignee != event["previous_assignee"]:
-        return RecoveryDecision("stay_blocked", "worker_mismatch", attempt, key)
+        return RecoveryDecision("stay_blocked", "worker_mismatch", n, key)
 
     kind = event["blocker_kind"]
-    expected_candidate = kind in RECOVERABLE_KINDS
-    if kind not in RECOVERABLE_KINDS | NON_RECOVERABLE_KINDS:
-        return RecoveryDecision("stay_blocked", "malformed_safety_state", attempt, key)
-    if event["recovery_candidate"] is not expected_candidate:
-        return RecoveryDecision("stay_blocked", "malformed_safety_state", attempt, key)
-    if kind in NON_RECOVERABLE_KINDS:
-        return RecoveryDecision("stay_blocked", kind, attempt, key)
-    if attempt >= MAX_ATTEMPTS:
-        return RecoveryDecision("notify_human", "retry_exhausted", attempt, key)
-
-    return RecoveryDecision(
-        "reassign",
-        "recoverable_blocker",
-        attempt + 1,
-        key,
-        event["previous_assignee"],
-    )
+    if kind not in BLOCKER_KINDS or event["recovery_candidate"] is not (
+        kind == "transient" and event["status"] == "blocked"
+    ):
+        return RecoveryDecision("stay_blocked", "malformed_safety_state", n, key)
+    if kind in HUMAN_KINDS:
+        return RecoveryDecision("notify_human", kind, n, key)
+    if current_status == "triage":
+        return RecoveryDecision("notify_human", "retry_exhausted", n, key)
+    if not reviewer:
+        return RecoveryDecision("notify_human", "no_reviewer", n, key)
+    return RecoveryDecision("reassign", "recoverable_blocker", n, key, reviewer)
 
 
 __all__ = [
-    "MAX_ATTEMPTS",
-    "NON_RECOVERABLE_KINDS",
-    "RECOVERABLE_KINDS",
     "RecoveryDecision",
     "TERMINAL_STATUSES",
     "evaluate_recovery",
