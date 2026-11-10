@@ -3,7 +3,7 @@ ginflow:
   board: ginflow
   workspace: /home/aioz/personal/ginflow
   reviewer:
-    profile: gintary
+    profile: cindy
   worker:
     profile: ginb
   trace: true
