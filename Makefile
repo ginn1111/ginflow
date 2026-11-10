@@ -10,9 +10,9 @@ doctor-deps:
 	python3 -m pip install pyyaml
 
 # === Setup ===
-## Install Ginflow skill into selected Hermes profiles
+## Install Ginflow skill into selected Hermes profiles; PROJECT=<path> also runs `ginflow init` per profile (GINFLOW_INIT_ARGS="--new-board b")
 install:
-	bash scripts/install.sh install $(PROFILES)
+	PROJECT="$(PROJECT)" bash scripts/install.sh install $(PROFILES)
 
 ## Remove installer-owned Ginflow integrations
 uninstall:
@@ -53,6 +53,7 @@ lifecycle-test:
 	python3 skills/ginflow/scripts/test-ginflow-lifecycle.py
 	python3 skills/ginflow/scripts/test-project-reviewer.py
 	python3 skills/ginflow/scripts/test-worktree-context.py
+	python3 skills/ginflow/scripts/test-ginflow-init.py
 
 install-test:
 	bash scripts/test-install.sh
