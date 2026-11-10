@@ -17,7 +17,7 @@ from typing import Any
 ROOT = Path(sys.argv[1]).resolve()
 ARGS = sys.argv[2:]
 MANIFEST = Path(os.environ.get("GINFLOW_INSTALL_MANIFEST", str(ROOT / ".ginflow-install.json"))).expanduser().resolve()
-VERSION = 2
+# Manifest intentionally stores managed paths only, without schema versioning.
 
 
 
@@ -140,7 +140,7 @@ def install(profile_names: list[str]) -> None:
         if key != "skill" and backup_path(destination).exists():
             fail(f"backup already exists; resolve before install: {backup_path(destination)}")
 
-    manifest: dict[str, Any] = {"version": VERSION, "source_root": str(ROOT), "skill": {}, "plugins": {}}
+    manifest: dict[str, Any] = {"source_root": str(ROOT), "skill": {}, "plugins": {}}
     rollback: list[tuple[Path, str | None]] = []
     try:
         for key, destination, source in targets:
@@ -185,18 +185,13 @@ def remove_managed(path: Path, expected_hash: str, backup: str | None) -> bool:
 
 
 def managed_entries(manifest: dict[str, Any]) -> list[tuple[str, Path, str, str | None]]:
-    """(label, path, hash, backup) for v2 manifests and legacy per-profile v1 manifests."""
+    """(label, path, hash, backup) for every managed entry."""
     entries: list[tuple[str, Path, str, str | None]] = []
     skill = manifest.get("skill")
     if skill:
         entries.append(("skill", Path(skill["path"]), skill["hash"], None))  # skill is never backed up
     for name, item in manifest.get("plugins", {}).items():
         entries.append((name, Path(item["path"]), item["hash"], item.get("backup")))
-    for name, item in manifest.get("profiles", {}).items():  # legacy v1
-        for key in ("skill", "plugin"):
-            if key in item:
-                backup = item.get(f"{key}_backup") if key == "plugin" else None
-                entries.append((f"{name}:{key}", Path(item[key]), item[f"{key}_hash"], backup))
     return entries
 
 
