@@ -53,9 +53,4 @@ def route(tasks: list[dict[str, Any]], current: Path, explicit_id: str | None = 
     return {"route": "invalid_status", "action": "block", "id": selected.get("id")}
 
 
-# Contract alias for adapters retaining existing private seam.
-def _route(tasks: list[dict[str, Any]], current: Path, explicit_id: str | None = None) -> dict[str, Any]:
-    return route(tasks, current, explicit_id)
-
-
 __all__ = ["route", "workspace"]
