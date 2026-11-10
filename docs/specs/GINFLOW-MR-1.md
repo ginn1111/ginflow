@@ -1,5 +1,5 @@
 ---
-status: draft
+status: completed
 scope: core/ginflow-core/publish.py, plugins/ginflow-gate (gate.py, publish.py, routing.py), skills/ginflow/lib/project_config.py, docs
 owner: cindy
 ---
@@ -51,13 +51,13 @@ Output: MR/PR URL recorded as Kanban comment `ginflow-publish: <url>`; failures 
 - Stdlib only. No new dependencies.
 
 ## Acceptance criteria
-- [ ] `build_push_argv` / `build_create_argv` return exact argv for github and gitlab, incl. `--draft`; guards reject bad provider, `-`-prefixed refs, non-hex commit.
-- [ ] `validate_completion` accepts `worktree:<path>` workspaces.
-- [ ] `ginflow.publish` validated by `project_config.publish_error`; malformed block reported, absent block = None.
-- [ ] Reviewer `kanban_complete` blocked when publish CLI auth fails; allowed when it passes; non-reviewer and no-publish paths untouched.
-- [ ] `post_tool_call` on successful reviewer `kanban_complete` runs push + create via fake `gh`/`glab` on PATH and comments URL; existing MR skips create; failure comments error and does not raise.
-- [ ] Routing context includes publish-auth blocker when configured CLI unauthenticated.
-- [ ] `make lint test` passes.
+- [x] `build_push_argv` / `build_create_argv` return exact argv for github and gitlab, incl. `--draft`; guards reject bad provider, `-`-prefixed refs, non-hex commit.
+- [x] `validate_completion` accepts `worktree:<path>` workspaces.
+- [x] `ginflow.publish` validated by `project_config.publish_error`; malformed block reported, absent block = None.
+- [x] Reviewer `kanban_complete` blocked when publish CLI auth fails; allowed when it passes; non-reviewer and no-publish paths untouched.
+- [x] `post_tool_call` on successful reviewer `kanban_complete` runs push + create via fake `gh`/`glab` on PATH and comments URL; existing MR skips create; failure comments error and does not raise.
+- [x] Routing context includes publish-auth blocker when configured CLI unauthenticated.
+- [x] `make lint test` passes.
 
 ## Edge cases
 - `dir:` workspace card with publish configured: no publish (no branch), no block.

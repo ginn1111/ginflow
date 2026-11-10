@@ -1,5 +1,5 @@
 ---
-status: draft
+status: completed
 scope: GINFLOW-MR-1
 owner: cindy
 ---
