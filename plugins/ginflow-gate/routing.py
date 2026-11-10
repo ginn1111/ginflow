@@ -132,10 +132,8 @@ def _routing_context(**kwargs: Any) -> dict[str, str] | str | None:
     if route_name == "no_cards_for_workspace":
         context += (
             "Report workspace to orchestrator; no Kanban card exists for workspace. "
-            "For new governed/autonomous work, create or select one initiative record "
-            "and follow Discovery → Shaping → Execution → Decision. Discovery resolves "
-            "ambiguity; Shaping approves the artifact-first package; do not mutate product "
-            "code or dispatch cards before approved Shaping."
+            "For new work, shape `docs/specs/<KEY>.md` and `docs/plans/<KEY>.md`, then create "
+            "blocked cards linking them; do not mutate product code or dispatch until cards exist."
         )
     elif route_name == "needs_card_selection":
         details = "; ".join(f"{item['id']}: {item['title']}" for item in candidates)

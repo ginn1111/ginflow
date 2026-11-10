@@ -51,7 +51,6 @@ _core = skill_lib.load("harness_core")
 artifact_gate = _core.artifact_gate
 normalize_card = _core.normalize_card
 _project_config = skill_lib.load("project_config")
-_content_hash = skill_lib.load("provider_document").content_hash
 
 
 def _block(message: str) -> dict[str, str]:
@@ -94,29 +93,6 @@ def linked_documents_missing_completion(card: dict, target: Path) -> list[str]:
     return sorted(missing)
 
 
-def _document_error(card: dict, metadata: dict, target: Path) -> str | None:
-    """Require matching document_baseline for cards linking a local work-unit document."""
-    links = [link for link in card.get("links", []) if isinstance(link, str) and "://" not in link
-             and link.startswith("docs/work-units/") and link.endswith(".md")]
-    baseline = metadata.get("document_baseline")
-    if not links and baseline is None:
-        return None  # card links no provider document (spec/plan card)
-    if len(links) != 1:
-        return "document_baseline requires exactly one linked docs/work-units/<KEY>.md document"
-    if not isinstance(baseline, dict) or not all(baseline.get(n) for n in ("content_hash", "commit")):
-        return "metadata.document_baseline requires non-empty content_hash and commit"
-    if metadata["verification_result"]["result"] != "passed":
-        return "verification_result.result must be passed when a provider document is linked"
-    shown = subprocess.run(
-        ["git", "show", f"{baseline['commit']}:{links[0]}"], cwd=target, capture_output=True
-    )
-    if shown.returncode:
-        return f"document {links[0]} is not committed at {baseline['commit']}"
-    if _content_hash(shown.stdout.decode("utf-8")) != baseline["content_hash"]:
-        return f"document_baseline.content_hash does not match committed {links[0]}"
-    return None
-
-
 @trace
 def validate_completion(card: dict, metadata: dict) -> str | None:
     required = ("id", "title", "objective", "scope", "acceptance", "workspace", "assignee", "links")
@@ -147,10 +123,6 @@ def validate_completion(card: dict, metadata: dict) -> str | None:
             + ". Add the frontmatter at byte 0, commit those changes, "
               "update verification_result.commit and artifact_baseline.commit, then retry review request or completion."
         )
-
-    document_error = _document_error(card, metadata, target)
-    if document_error:
-        return document_error
 
     candidate = card | {"artifact_baseline": baseline}
     status = artifact_gate(candidate, target)
