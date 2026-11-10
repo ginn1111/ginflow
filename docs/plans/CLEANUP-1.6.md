@@ -1,5 +1,5 @@
 ---
-status: draft
+status: completed
 scope: scripts/install.sh; scripts/test-install.sh
 owner: ginb
 ---

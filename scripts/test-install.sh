@@ -29,6 +29,12 @@ for profile in alpha beta; do
 done
 [[ ! -e "$PROFILES/not-a-profile/plugins" ]]
 [[ -f "$GINFLOW_INSTALL_MANIFEST" ]]
+python3 - "$GINFLOW_INSTALL_MANIFEST" <<'PY'
+import json, sys
+with open(sys.argv[1]) as f:
+    manifest = json.load(f)
+assert set(manifest) == {"source_root", "skill", "plugins"}, sorted(manifest)
+PY
 
 # Copied gate package loads from a profile: every core module from ~/.agents/skills/ginflow/lib.
 python3 -I - "$PROFILES/alpha/plugins/ginflow-gate" <<PY
