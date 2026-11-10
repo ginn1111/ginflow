@@ -53,7 +53,7 @@ def test_native_review_transition():
         target = Path(project)
         (target / "docs/specs").mkdir(parents=True)
         (target / "docs/specs/HARNESS-REVIEW-1.md").write_text(SPEC)
-        (target / ".ginflow.yaml").write_text("version: 1\nginflow:\n  board: x\n  workspace: " + str(target) + "\n  reviewer:\n    profile: gintary\n")
+        (target / ".ginflow.yaml").write_text("ginflow:\n  board: x\n  workspace: " + str(target) + "\n  reviewer:\n    profile: gintary\n")
         subprocess.run(["git", "init", "-q"], cwd=target, check=True)
         subprocess.run(["git", "config", "user.name", "Ginflow Test"], cwd=target, check=True)
         subprocess.run(["git", "config", "user.email", "ginflow@example.test"], cwd=target, check=True)

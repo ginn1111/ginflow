@@ -1,4 +1,3 @@
-version: 1
 ginflow:
   board: ginflow
   workspace: /home/aioz/personal/ginflow

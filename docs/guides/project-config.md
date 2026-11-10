@@ -3,7 +3,6 @@
 Each target project keeps optional Ginflow context in `.ginflow.yaml` at its repository root. The `/ginflow` skill creates it on first load; do not hand-write it unless repairing.
 
 ```yaml
-version: 1
 ginflow:
   board: <Kanban board slug>
   workspace: /absolute/path/to/project

@@ -1,5 +1,5 @@
 ---
-status: draft
+status: completed
 scope: skills/ginflow/lib/project_config.py; test fixtures under skills/ginflow/scripts/ and plugins/ginflow-gate/; .ginflow.yaml, README.md, docs/guides/project-config.md, skills/ginflow/references/project-context.md
 owner: ginb
 ---

@@ -92,7 +92,7 @@ def test_full_kanban_lifecycle_traced():
         pre_tool_call = gate.pre_tool_call
 
         (target / ".ginflow.yaml").write_text(
-            f"version: 1\nginflow:\n  board: {TEST_BOARD}\n  workspace: {target}\n  trace: true\n"
+            f"ginflow:\n  board: {TEST_BOARD}\n  workspace: {target}\n  trace: true\n"
         )
         root = target / ".ginflow"
         session = "itest"

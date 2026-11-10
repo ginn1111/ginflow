@@ -55,7 +55,6 @@ Set the project's canonical verification command in `.hermes.md`, open Hermes th
 Minimal `.ginflow.yaml` (written for you; shown for reference):
 
 ```yaml
-version: 1
 ginflow:
   board: <Kanban board slug>
   workspace: /absolute/path/to/project

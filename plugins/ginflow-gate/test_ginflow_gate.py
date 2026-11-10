@@ -84,7 +84,7 @@ def test_project_config_routes_fail_closed():
             assert "mutation_allowed=False" in missing["context"]
 
             (target / ".ginflow.yaml").write_text(
-                "version: 1\nginflow:\n  board: test\n  workspace: relative\n"
+                "ginflow:\n  board: test\n  workspace: relative\n"
             )
             invalid = _routing_context()
             assert "route=project_config_invalid" in invalid["context"]
@@ -95,7 +95,7 @@ def test_project_config_routes_fail_closed():
             assert "mutation_allowed=False" in invalid["context"]
 
             (target / ".ginflow.yaml").write_text(
-                "version: 1\nginflow:\n  board: test\n"
+                "ginflow:\n  board: test\n"
                 f"  workspace: {target.resolve()}\n"
             )
             if "requires PyYAML" not in invalid["context"]:
@@ -170,7 +170,7 @@ def test_old_version_metadata_does_not_change_guidance():
         with tempfile.TemporaryDirectory(prefix="ginflow-version-routing-") as directory:
             target = Path(directory)
             target.joinpath(".ginflow.yaml").write_text(
-                "version: 1\nginflow:\n  board: test\n"
+                "ginflow:\n  board: test\n"
                 f"  workspace: {target.resolve()}\n"
             )
             os.chdir(target)
@@ -250,7 +250,7 @@ def test_live_tmp_next_card_docs():
         (target / "docs/specs").mkdir(parents=True)
         (target / "docs/specs/TMP-2.md").write_text("# Temporary brief\n")
         (target / ".ginflow.yaml").write_text(
-            "version: 1\nginflow:\n  board: " + TEST_BOARD + "\n"
+            "ginflow:\n  board: " + TEST_BOARD + "\n"
             f"  workspace: {target.resolve()}\n"
         )
         subprocess.run(["git", "init", "-q"], cwd=target, check=True)
@@ -326,7 +326,7 @@ def test_blocked_route_context_reports_metadata_without_execution():
     with tempfile.TemporaryDirectory(prefix="ginflow-gate-blocked-") as project:
         target = Path(project)
         (target / ".ginflow.yaml").write_text(
-            "version: 1\nginflow:\n  board: test\n"
+            "ginflow:\n  board: test\n"
             f"  workspace: {target.resolve()}\n"
         )
         workspace = str(target.resolve())

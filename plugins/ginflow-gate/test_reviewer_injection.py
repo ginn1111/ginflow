@@ -22,9 +22,9 @@ def run(config, args):
         return gate.pre_tool_call("kanban_request_review", {"task_id": "t_x", "metadata": {}} | args)
 
 
-CFG = "version: 1\nginflow:\n  board: b\n  workspace: {d}\n  reviewer:\n    profile: gintary\n"
+CFG = "ginflow:\n  board: b\n  workspace: {d}\n  reviewer:\n    profile: gintary\n"
 assert run(CFG, {}) == {"action": "modify", "args": {"reviewer": "gintary"}}
 assert run(CFG, {"reviewer": "other"}) is None  # explicit wins
-assert run("version: 1\nginflow:\n  board: b\n  workspace: {d}\n", {}) is None  # no reviewer block
+assert run("ginflow:\n  board: b\n  workspace: {d}\n", {}) is None  # no reviewer block
 assert run(None, {}) is None  # no config file
 print("PASS: reviewer injection")

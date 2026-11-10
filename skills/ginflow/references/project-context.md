@@ -7,7 +7,6 @@ collects the board choice. Runtime validation and persistence enforce the contra
 but no runtime hook or CLI silently initializes a project.
 
 ```yaml
-version: 1
 ginflow:
   board: <Kanban board slug>
   workspace: /absolute/path/to/project
@@ -20,6 +19,8 @@ ginflow:
     provider: github   # github | gitlab
     target: develop
 ```
+
+Only `ginflow` top-level key is allowed. Other keys, including stale `version:`, fail closed; delete them.
 
 The resolved workspace is the target directory passed to verification. Board precedence is:
 
@@ -35,7 +36,7 @@ and `workspace` are required; the worker block is recommended, not required.
 When a field is missing, `/ginflow` shows the resolved fallback and asks whether
 to configure the complete block before creating the card. Entered defaults are
 validated, then atomically merged into the existing config, preserving board,
-workspace, version, and unrelated keys. Skipping setup leaves the config
+workspace, and unrelated keys. Skipping setup leaves the config
 unchanged and uses the current Hermes profile, omitting provider/model
 overrides so the worker profile's own configuration applies.
 
