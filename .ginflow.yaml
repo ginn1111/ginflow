@@ -1,0 +1,9 @@
+version: 1
+ginflow:
+  board: ginflow
+  workspace: /home/aioz/personal/ginflow
+  reviewer:
+    profile: gintary
+  worker:
+    profile: ginb
+  trace: true
