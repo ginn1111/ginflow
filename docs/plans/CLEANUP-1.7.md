@@ -1,5 +1,5 @@
 ---
-status: draft
+status: completed
 scope: skills/ginflow/lib/decision.py; skills/ginflow/lib/project_config.py
 owner: ginb
 ---
