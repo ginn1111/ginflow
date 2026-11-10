@@ -25,13 +25,13 @@ Project config holds only the `ginflow` mapping. Any other top-level key, includ
 
 ## Constraints
 
-- Workspace: main checkout `/home/aioz/personal/ginflow`, local commits only, never `git push`.
+- Workspace: Hermes worktree `.worktrees/<task-id>` on branch `wt/<task-id>`, based on `main`. Commit only there; never `git push` yourself.
+- PR: after review passes, reviewer `kanban_complete` auto-publishes a GitHub PR to `main` (`ginflow.publish`). Gin merges it before the next card dispatches.
 - Stay in card scope. Smallest coherent commits.
 - Canonical verification: `make lint test`, run serially (Hermes-backed tests share Kanban test boards).
 - Before review: set this spec and the linked plan frontmatter to `status: completed`, commit, then `kanban_request_review` with `verification_result` and `artifact_baseline` (paths = both linked docs).
 - Parent issue: https://github.com/ginn1111/ginflow/issues/1 ; ticket: https://github.com/ginn1111/ginflow/issues/6
 
+## Rollout
 
-## Rollout constraint
-
-Installed profiles (`~/.agents/skills/ginflow`, `~/.hermes/profiles/{cindy,ginb}/plugins/ginflow-gate`) still require `version: 1`. After committing, before `kanban_request_review`, call `kanban_block` kind `needs_input` with a `required_action:` line asking Gin to approve `make install PROFILES="cindy ginb"`. Do not run the install yourself.
+Installed profiles still require `version: 1` until reinstalled. Cindy (orchestrator) reinstalls profiles and merges order; worker does not run `make install` and does not block on it.

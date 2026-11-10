@@ -25,7 +25,8 @@ Shaping produces Execution Packages with no version field, and validation and ca
 
 ## Constraints
 
-- Workspace: main checkout `/home/aioz/personal/ginflow`, local commits only, never `git push`.
+- Workspace: Hermes worktree `.worktrees/<task-id>` on branch `wt/<task-id>`, based on `main`. Commit only there; never `git push` yourself.
+- PR: after review passes, reviewer `kanban_complete` auto-publishes a GitHub PR to `main` (`ginflow.publish`). Gin merges it before the next card dispatches.
 - Stay in card scope. Smallest coherent commits.
 - Canonical verification: `make lint test`, run serially (Hermes-backed tests share Kanban test boards).
 - Before review: set this spec and the linked plan frontmatter to `status: completed`, commit, then `kanban_request_review` with `verification_result` and `artifact_baseline` (paths = both linked docs).

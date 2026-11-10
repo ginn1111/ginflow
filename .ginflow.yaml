@@ -7,3 +7,6 @@ ginflow:
   worker:
     profile: ginb
   trace: true
+  publish:
+    provider: github
+    target: main

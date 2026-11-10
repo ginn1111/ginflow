@@ -6,7 +6,7 @@ owner: ginb
 
 # Plan — CLEANUP-1.3: Routing context without legacy v1 guidance
 
-Source: umbrella plan for GitHub #1. Line numbers are approximate; locate code by symbol. Earlier tickets may have already changed nearby code — re-read before editing. RED test first, then change, then `make lint test`.
+Source: umbrella plan for GitHub #1. Line numbers are approximate; locate code by symbol. Earlier tickets are merged into `main` before this card starts and may have changed nearby code — re-read before editing. Ignore any umbrella-plan step about creating cards or closing the umbrella card. RED test first, then change, then `make lint test`.
 
 ## Step 1: B: remove legacy v1 routing guidance
 
