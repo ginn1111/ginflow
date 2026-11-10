@@ -1,5 +1,5 @@
 ---
-status: draft
+status: completed
 scope: GLOSSARY.md, docs/adrs/0001-artifact-first-execution-packages.md, skills/ginflow/SKILL.md; docs/architecture/; docs/specs/GINFLOW-MR-2.md, docs/plans/GINFLOW-MR-2.md
 owner: ginb
 ---

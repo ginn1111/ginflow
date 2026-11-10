@@ -2,7 +2,7 @@
 
 ## Decision
 
-Ginflow v2 uses one approved Execution Package before implementation dispatch. The package is a normalized Work Package whose Contract, Spec, and Plan sections are stored in one canonical **provider document** per Work Unit, hosted by exactly one provider: `local` (consolidated Markdown), `github` (Issue), or `linear` (Issue). The currently installed contract defines the only executable schema; users do not select workflow versions. Package also holds Work Units, dependency graph, workspace allocation, verification strategy, and Integration Card.
+Ginflow uses one approved Execution Package before implementation dispatch. The package is a normalized Work Package whose Contract, Spec, and Plan sections are stored in one canonical **provider document** per Work Unit, hosted by exactly one provider: `local` (consolidated Markdown), `github` (Issue), or `linear` (Issue). The currently installed contract defines the only executable schema; users do not select workflow versions. Package also holds Work Units, dependency graph, workspace allocation, verification strategy, and Integration Card.
 
 Provider-document rules (supersedes the earlier repository-local-only rule):
 

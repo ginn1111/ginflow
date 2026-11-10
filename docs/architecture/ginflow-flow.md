@@ -16,7 +16,7 @@ Large autonomous execution can leave humans without reliable context. Ginflow se
 ## Artifact-first flow
 
 - Hermes owns profile/runtime identity, Kanban state and tools, assignment, dispatch, persistence, and lifecycle authority.
-- Ginflow core validates versioned pure records and derives readiness, projections, and provider-neutral intent.
+- Ginflow core validates pure records and derives readiness, projections, and provider-neutral intent.
 - `ginflow-gate` remains the completion/evidence adapter at native Hermes transitions.
 - Target projects own product behavior and canonical verification.
 - Adapters collect Git/check evidence, deliver gateway notifications, and later publish provider-specific merge requests.
@@ -26,7 +26,7 @@ Large autonomous execution can leave humans without reliable context. Ginflow se
 One stable Initiative links all records. Phase metadata remains separate from Hermes physical Kanban status.
 
 1. **Discovery** captures problem, desired outcome, constraints, non-goals, prototype evidence, vocabulary, open questions, and approved Shaping handoff. Prototype code is non-production unless explicitly promoted through Spec, Plan, Ticket, acceptance, and verification.
-2. **Shaping** retains artifact-first Execution Package v2. Each Ticket declares objective, scope, exclusions, acceptance, dependencies, workspace, owner, verification, Change Group, risk, and escalation. Approval binds package revision and artifact baseline.
+2. **Shaping** uses the artifact-first Execution Package. Each Ticket declares objective, scope, exclusions, acceptance, dependencies, workspace, owner, verification, Change Group, risk, and escalation. Approval binds package revision and artifact baseline.
 3. **Execution** authorizes one immutable `execution_batch` attempt per run. Authorization binds canonical package digest, baseline commit, Ticket set, isolated workspaces, budget, stop conditions, and actor claim. Existing blocked Work Unit and Integration card creation remains the dispatch seam. Integration success opens Decision; it does not complete Initiative.
 4. **Decision** starts read-only. `review_cycle` stores exact commits, evidence, findings, deviations, Change Groups, coverage, risks, actor, immutable revisions, and dispositions. Human outcomes are `approved_for_mr`, `enhancement_requested`, `rejected`, `resume_execution`, `reshape_required`, or `stopped`. Only `approved_for_mr` completes Ginflow lifecycle.
 
@@ -64,12 +64,24 @@ Canonical diagram lane: bottom of page **Ginflow system** (cells `pd-*`). Each W
 
 Hermes Kanban remains lifecycle authority throughout. Details: [ADR 0001](../adrs/0001-artifact-first-execution-packages.md).
 
+## Runtime hooks (ginflow-gate)
+
+| Hermes hook | Handler | Effect |
+| --- | --- | --- |
+| `pre_llm_call` | `routing._routing_context` | inject route, mutation_allowed, startup validation |
+| `pre_tool_call` | `block_routing._pre_tool_call` | `kanban_block` reason guard (`required_action`) |
+| `pre_tool_call` | `gate.pre_tool_call` | completion/review evidence gate; reviewer injection; publish prepare |
+| `post_tool_call` | `gate.post_tool_call` | publish finish (push + MR/PR) after reviewer `kanban_complete` |
+| `kanban_task_blocked` | `block_routing.on_task_blocked` | transient auto-repair once; critical push to notify target |
+
+Not wired yet: `feedback` and `recovery_policy` helpers exist in `plugins/ginflow-gate/` but are not registered as hooks.
+
 ## Derived flow
 
 ```mermaid
 flowchart TD
     discovery["Discovery<br/>problem · outcome · boundaries"] --> handoff["Approved Shaping handoff"]
-    handoff --> shaping["Shaping<br/>Execution Package v2"]
+    handoff --> shaping["Shaping<br/>Execution Package"]
     shaping --> auth["Immutable AFK authorization<br/>package digest · baseline · budget"]
     auth --> units["Execution<br/>isolated Work Units"]
     units --> integration["Integration Card<br/>combined verification"]

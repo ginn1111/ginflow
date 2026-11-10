@@ -1,6 +1,6 @@
 ---
 status: draft
-scope: core/ginflow-core/publish.py, plugins/ginflow-gate/publish.py, plugins/ginflow-gate/routing.py, skills/ginflow/lib/project_config.py, tests, docs
+scope: skills/ginflow/lib/publish.py, plugins/ginflow-gate/publish.py, plugins/ginflow-gate/routing.py, skills/ginflow/lib/project_config.py, tests, docs
 owner: cindy
 ---
 
