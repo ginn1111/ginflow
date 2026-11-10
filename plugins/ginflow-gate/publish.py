@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 from pathlib import Path
 from typing import Any
@@ -61,6 +62,37 @@ def _body(card: dict, metadata: dict) -> str:
     return "\n".join(lines)
 
 
+_PUBLISHED = re.compile(r"^ginflow-publish: (https?://\S+)$")
+
+
+def _open_parent_prs(parents: list[str], board: str | None, config: dict[str, Any], cwd: Path) -> list[tuple[str, str]]:
+    """(branch, url) per parent whose published GitHub PR is still open. Best effort."""
+    found = []
+    if config["provider"] != "github":
+        return found
+    for pid in parents:
+        data = _kanban.kanban_json(board, "show", pid, "--json")
+        urls = [m.group(1) for c in data.get("comments") or [] if (m := _PUBLISHED.match(str(c.get("body") or "")))]
+        branch = (data["task"].get("branch_name") or "").strip() or f"wt/{pid}"
+        if urls and _run(["gh", "pr", "view", urls[-1], "--json", "state", "-q", ".state"], cwd=cwd, timeout=30).stdout.strip() == "OPEN":
+            found.append((branch, urls[-1]))
+    return found
+
+
+def base_and_body(task_id: str, board: str | None, config: dict[str, Any], cwd: Path, body: str) -> tuple[str, str]:
+    """Stack the PR on the single open parent PR branch; else target + `Merge after:` list."""
+    try:
+        parents = _kanban.kanban_json(board, "show", task_id, "--json").get("parents") or []
+        open_prs = _open_parent_prs(parents, board, config, cwd) if parents else []
+    except Exception:  # ponytail: lookup failure falls back to the configured target
+        return config["target"], body
+    if len(parents) == 1 and open_prs:
+        return open_prs[0][0], body
+    if open_prs:
+        body += "\n\nMerge after: " + ", ".join(url for _, url in open_prs)
+    return config["target"], body
+
+
 def prepare(task_id: str, card: dict, metadata: dict, board: str | None, project_config: Any, kwargs: dict) -> str | None:
     """Block message when publish is required but impossible; else None (and remember the job)."""
     workspace = str(card.get("workspace") or "")
@@ -87,9 +119,11 @@ def prepare(task_id: str, card: dict, metadata: dict, board: str | None, project
     # Fail closed on bad input before completion, not after.
     core.build_push_argv(str(path), config["remote"], commit, branch)
     core.build_create_argv(config["provider"], branch, config["target"], str(card.get("title")), "x")
+    base, body = base_and_body(task_id, board, config, path, _body(card, metadata))
+    core.build_create_argv(config["provider"], branch, base, str(card.get("title")), "x")
     _PENDING[task_id] = {"worktree": str(path), "git_dir": common.stdout.strip(), "branch": branch, "commit": commit,
                          "config": config, "board": board, "title": str(card.get("title")),
-                         "body": _body(card, metadata)}
+                         "body": body, "base": base}
     return None
 
 
@@ -117,7 +151,7 @@ def publish(job: dict[str, Any]) -> tuple[str | None, str | None]:
     url = core.parse_existing_url(config["provider"], existing.stdout) if not existing.returncode else None
     if url:
         return url, None
-    argv = core.build_create_argv(config["provider"], job["branch"], config["target"], job["title"], job["body"], config["draft"])
+    argv = core.build_create_argv(config["provider"], job["branch"], job["base"], job["title"], job["body"], config["draft"])
     result = _run(argv, cwd=cwd)
     url = core.parse_created_url(result.stdout) if not result.returncode else None
     if not url:
