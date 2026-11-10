@@ -3,7 +3,7 @@
 - **Initiative** — stable aggregate identity linking Discovery, approved package revisions, Execution Batches, cards, Review Cycles, notifications, and merge-request intents.
 - **Discovery** — read-only problem framing: desired outcome, constraints, non-goals, prototype evidence, vocabulary, and open questions.
 - **Shaping handoff** — approved Discovery output that authorizes Shaping to form one Execution Package.
-- **Execution Package** — artifact-first Ginflow v2 contract containing approved contract/spec, Tickets, plans, dependencies, workspaces, and baseline verification.
+- **Execution Package** — artifact-first Ginflow contract containing approved contract/spec, Tickets, plans, dependencies, workspaces, and baseline verification.
 - **Execution Batch** — immutable AFK attempt bound to one package digest, artifact baseline, Ticket set, workspaces, budget, stop conditions, and actor authorization.
 - **Work Unit** — one Ticket execution card. Parallel mutation requires isolated worktrees or workspaces.
 - **Work Package** — normalized, provider-neutral content of one Work Unit (Contract, Spec, Plan, acceptance, verification, dependencies, risks); rendered into its provider document.

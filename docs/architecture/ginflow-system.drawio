@@ -434,14 +434,35 @@
         <mxCell id="3OxK573chlKwpl4-sLJv-56" parent="1" style="whiteSpace=wrap;html=1;sketch=1;hachureGap=4;jiggle=2;curveFitting=1;fontFamily=Architects Daughter;fontSource=https://fonts.googleapis.com/css?family=Architects+Daughter;fillColor=#d5e8d4;strokeColor=#82b366;" value="Ginflow harness&lt;br/&gt;&lt;b&gt;Ownership: core&lt;/b&gt;" vertex="1">
           <mxGeometry height="60" width="120" x="1950" y="-240" as="geometry" />
         </mxCell>
-        <mxCell id="ginflow12-missing-observability" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" value="Expected: observability / telemetry (missing)" vertex="1">
+        <mxCell id="ginflow12-missing-observability" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="Observability: ginflow-trace (opt-in)" vertex="1">
           <mxGeometry height="60" width="240" x="-140" y="500" as="geometry" />
         </mxCell>
         <mxCell id="ginflow12-proposed-security" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" value="Proposed: security / privacy controls (not implemented)" vertex="1">
           <mxGeometry height="60" width="240" x="-140" y="590" as="geometry" />
         </mxCell>
-        <mxCell id="ginflow12-legend-overview" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#666666;fontSize=14;" value="LEGEND&amp;#xa;Green = verified in current code/docs&amp;#xa;Red = expected but missing&amp;#xa;Yellow = proposed, not implemented" vertex="1">
+        <mxCell id="ginflow12-legend-overview" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#666666;fontSize=14;" value="LEGEND&amp;#xa;Green = verified in current code/docs&amp;#xa;Red = expected but missing / not wired&amp;#xa;Yellow = proposed, not implemented" vertex="1">
           <mxGeometry height="110" width="300" x="1030" y="420" as="geometry" />
+        </mxCell>
+        <mxCell id="ginflow-cleanup-block-routing" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="Block routing&lt;br/&gt;kanban_task_blocked + kanban_block guard&lt;br/&gt;&lt;b&gt;Ownership: plugin&lt;/b&gt;" vertex="1">
+          <mxGeometry height="60" width="170" x="1430" y="340" as="geometry" />
+        </mxCell>
+        <mxCell id="ginflow-cleanup-publish" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="Auto-publish MR/PR&lt;br/&gt;reviewer kanban_complete&lt;br/&gt;&lt;b&gt;Ownership: plugin&lt;/b&gt;" vertex="1">
+          <mxGeometry height="60" width="170" x="1870" y="340" as="geometry" />
+        </mxCell>
+        <mxCell id="ginflow-cleanup-lib" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="skills/ginflow/lib&lt;br/&gt;single core home (skill_lib.load)" vertex="1">
+          <mxGeometry height="60" width="200" x="2250" y="340" as="geometry" />
+        </mxCell>
+        <mxCell id="ginflow-cleanup-unwired" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" value="Not wired: initiative · execution_package · execution_batch · card_creation · decision · review_cycle · merge_request · followup · recovery_policy · feedback" vertex="1">
+          <mxGeometry height="60" width="420" x="2140" y="440" as="geometry" />
+        </mxCell>
+        <mxCell id="ginflow-cleanup-e1" edge="1" parent="1" source="3OxK573chlKwpl4-sLJv-36" target="ginflow-cleanup-block-routing" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ginflow-cleanup-e2" edge="1" parent="1" source="3OxK573chlKwpl4-sLJv-47" target="ginflow-cleanup-publish" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ginflow-cleanup-e3" edge="1" parent="1" source="3OxK573chlKwpl4-sLJv-49" target="ginflow-cleanup-lib" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+          <mxGeometry relative="1" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>

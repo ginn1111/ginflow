@@ -24,7 +24,7 @@ One stable Initiative per large autonomous effort. Terms: `GLOSSARY.md`.
 | Phase | Does | Card needed |
 | --- | --- | --- |
 | Discovery | frame problem, boundaries, vocabulary, open questions; record approved Shaping handoff | no |
-| Shaping | approve artifact-first Execution Package v2 (spec, plan, Tickets) | no |
+| Shaping | approve artifact-first Execution Package (spec, plan, Tickets) | no |
 | Execution | immutable `execution_batch`; create blocked cards; work inside card scope | yes |
 | Decision | read-only human review after Integration; only `approved_for_mr` completes lifecycle | n/a |
 

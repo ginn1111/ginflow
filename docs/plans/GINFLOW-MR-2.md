@@ -8,7 +8,7 @@ owner: cindy
 
 Content rules: `references/artifact-content-guide.md` in `ginflow`.
 
-1. `core/ginflow-core/publish.py`: add pure `parse_remote_host(url)`, `select_base(candidates, scores, branch)`; `build_existing_argv(provider, branch, base)`; `build_auth_argv(provider, host)`; drop `draft` param from `build_create_argv`. Extend `test_publish.py`.
+1. `skills/ginflow/lib/publish.py`: add pure `parse_remote_host(url)`, `select_base(candidates, scores, branch)`; `build_existing_argv(provider, branch, base)`; `build_auth_argv(provider, host)`; drop `draft` param from `build_create_argv`. Extend `test_publish.py`.
 2. `skills/ginflow/lib/project_config.py`: `PUBLISH_FIELDS = {"provider"}`; `configured_publish` returns `{"provider"}` only.
 3. `plugins/ginflow-gate/publish.py`: `_host(ws)` via remote URL + `ssh -G`; `_resolve_base(ws, commit, branch, override)` runs fetch/for-each-ref/merge-base/rev-list and calls `select_base`; `prepare` stores base + reason; `publish` uses it; body adds base line.
 4. `plugins/ginflow-gate/routing.py`: startup auth with derived host.
