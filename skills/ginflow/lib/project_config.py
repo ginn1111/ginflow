@@ -611,11 +611,6 @@ def set_documents(workspace: Path, documents: Mapping[str, Any]) -> Path:
     return config_path(workspace)
 
 
-def context_mismatch(workspace: Path) -> str | None:
-    """Return a deterministic error when a config belongs to another project."""
-    error = context_error(workspace)
-    return error if error and "workspace" in error else None
-
 
 def active_board(env: Mapping[str, str] | None = None) -> str | None:
     values = env if env is not None else os.environ
@@ -763,4 +758,4 @@ def initialize_context(
     return persisted
 
 
-__all__ = ["DOC_PROVIDERS", "STATUS_KEYS", "DocumentConfigError", "configured_documents", "documents_block_error", "documents_error", "require_ready", "resolve_documents", "set_documents", "ReviewerConfigError", "configured_reviewer", "configured_publish", "publish_error", "hermes_default_reviewer", "installed_profiles", "reviewer_error", "seed_default_reviewer", "CONFIG_RELATIVE_PATH", "WORKER_FIELDS", "ContextInitializationError", "WorkerDefaultsError", "active_board", "config_exists", "config_path", "configured_context", "configured_worker", "context_error", "context_mismatch", "initialize_context", "load_config", "persist_context", "persist_worker_defaults", "resolve_board", "resolve_worker_dispatch", "worker_error"]
+__all__ = ["DOC_PROVIDERS", "STATUS_KEYS", "DocumentConfigError", "configured_documents", "documents_block_error", "documents_error", "require_ready", "resolve_documents", "set_documents", "ReviewerConfigError", "configured_reviewer", "configured_publish", "publish_error", "hermes_default_reviewer", "installed_profiles", "reviewer_error", "seed_default_reviewer", "CONFIG_RELATIVE_PATH", "WORKER_FIELDS", "ContextInitializationError", "WorkerDefaultsError", "active_board", "config_exists", "config_path", "configured_context", "configured_worker", "context_error", "initialize_context", "load_config", "persist_context", "persist_worker_defaults", "resolve_board", "resolve_worker_dispatch", "worker_error"]

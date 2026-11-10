@@ -130,14 +130,6 @@ def _safe_projection(value: Any) -> Any:
     return value
 
 
-def _notification_context(record: Mapping[str, Any]) -> tuple[str, str]:
-    if "blocker" in record:
-        blocker = record["blocker"]
-        if not isinstance(blocker, Mapping) or not _text(blocker.get("class")):
-            raise ValueError("blocked Decision requires blocker context")
-        return "decision_blocked", blocker["class"]
-    return "decision_ready", ""
-
 
 def build_projection(record: Mapping[str, Any], *, summary: str) -> dict[str, Any]:
     """Build bounded redacted projection ordered for progressive disclosure."""
