@@ -1,0 +1,132 @@
+---
+status: completed
+scope: plugins/ginflow-gate, plugins/ginflow-trace, skills/ginflow/lib
+owner: ginb
+---
+
+# Integration status — plugins and core
+
+Wired = reached from a Hermes hook (`pre_llm_call`, `pre_tool_call`, `post_tool_call`, `kanban_task_blocked`), plugin load, or the harness CLI (`validate-harness.py`); the wired cell names the path. Doc = named in `skills/ginflow/SKILL.md` or its references. Tested = named in a test run by `make test`. Public = top-level function without a leading underscore (plus `_routing_context`, the `pre_llm_call` hook). Wired cells follow call-graph reading of hook registrations; Doc and Tested cells are word-grep matches, so generic names (`check`, `has`) can over-report.
+
+Regenerate evidence: `grep -rnw <name> plugins skills/ginflow scripts --include=*.py | grep -v test` for callers; `grep -rnw <name> plugins skills/ginflow scripts --include='test*.py'` for tests; `grep -rnw <name> skills/ginflow --include=*.md` for docs.
+
+## ginflow-gate plugin
+
+| Module | Function | Wired | Doc | Tested |
+| --- | --- | --- | --- | --- |
+| __init__.py | `register` | [x] plugin load | [ ] | [x] |
+| block_routing.py | `guard_block` | [x] pre_tool_call | [ ] | [ ] |
+| block_routing.py | `build_message` | [x] kanban_task_blocked | [ ] | [x] |
+| block_routing.py | `on_task_blocked` | [x] kanban_task_blocked | [ ] | [ ] |
+| block_routing.py | `register` | [x] plugin load | [ ] | [x] |
+| blocker_reporting.py | `build_blocker_event` | [ ] | [ ] | [x] |
+| blocker_reporting.py | `blocker_comment` | [ ] | [ ] | [x] |
+| feedback.py | `build_feedback_event` | [ ] | [ ] | [x] |
+| gate.py | `load_card` | [x] pre_tool_call | [ ] | [x] |
+| gate.py | `linked_documents_missing_completion` | [x] pre_tool_call | [ ] | [x] |
+| gate.py | `validate_completion` | [x] pre_tool_call | [ ] | [x] |
+| gate.py | `pre_tool_call` | [x] pre_tool_call | [ ] | [x] |
+| gate.py | `post_tool_call` | [x] post_tool_call | [ ] | [x] |
+| gate.py | `register` | [x] plugin load | [ ] | [x] |
+| publish.py | `active_profile` | [x] pre_tool_call | [ ] | [ ] |
+| publish.py | `auth_error` | [x] pre_llm_call | [ ] | [ ] |
+| publish.py | `prepare` | [x] pre_tool_call | [ ] | [ ] |
+| publish.py | `publish` | [x] post_tool_call | [x] | [x] |
+| publish.py | `finish` | [x] post_tool_call | [x] | [ ] |
+| recovery_policy.py | `evaluate_recovery` | [ ] | [ ] | [x] |
+| routing.py | `register` | [x] plugin load | [ ] | [x] |
+| routing.py | `_routing_context` | [x] pre_llm_call | [ ] | [x] |
+| skill_lib.py | `load` | [x] import time | [x] | [x] |
+| trace_adapter.py | _(no public function)_ | - | - | - |
+
+## ginflow-trace plugin
+
+| Module | Function | Wired | Doc | Tested |
+| --- | --- | --- | --- | --- |
+| __init__.py | _(no public function)_ | - | - | - |
+| decorator.py | `trace` | [x] via gate trace_adapter | [x] | [x] |
+| identity.py | `resolve_identity` | [x] via trace | [ ] | [x] |
+| sanitize.py | `sanitize` | [x] via trace | [ ] | [x] |
+| storage.py | `append_record` | [x] via trace | [ ] | [x] |
+
+## skills/ginflow/lib (core)
+
+| Module | Function | Wired | Doc | Tested |
+| --- | --- | --- | --- | --- |
+| card_creation.py | `create_execution_cards` | [ ] | [ ] | [x] |
+| decision.py | `decision_ready` | [ ] | [ ] | [x] |
+| decision.py | `build_projection` | [ ] | [ ] | [x] |
+| decision.py | `decision_blocked` | [ ] | [ ] | [x] |
+| decision.py | `build_notification` | [ ] | [ ] | [x] |
+| execution_batch.py | `canonical_digest` | [ ] | [ ] | [x] |
+| execution_batch.py | `authorize_batch` | [ ] | [ ] | [x] |
+| execution_batch.py | `create_batch` | [ ] | [ ] | [x] |
+| execution_package.py | `shape_package` | [ ] | [ ] | [x] |
+| execution_package.py | `approve_package` | [ ] | [ ] | [x] |
+| execution_package.py | `validate_package` | [ ] | [ ] | [x] |
+| followup.py | `route_followup` | [ ] | [ ] | [x] |
+| harness_core.py | `check` | [x] harness CLI / gate / routing | [x] | [x] |
+| harness_core.py | `has` | [x] harness CLI / gate / routing | [x] | [x] |
+| harness_core.py | `parse_card_body` | [x] harness CLI / gate / routing | [ ] | [x] |
+| harness_core.py | `normalize_card` | [x] harness CLI / gate / routing | [ ] | [x] |
+| harness_core.py | `kanban_argv` | [x] harness CLI / gate / routing | [ ] | [ ] |
+| harness_core.py | `kanban_run` | [x] harness CLI / gate / routing | [ ] | [ ] |
+| harness_core.py | `kanban_json` | [x] harness CLI / gate / routing | [ ] | [ ] |
+| harness_core.py | `load_kanban_card` | [x] harness CLI / gate / routing | [ ] | [ ] |
+| harness_core.py | `linked_artifacts` | [x] harness CLI / gate / routing | [ ] | [ ] |
+| harness_core.py | `startup_gate` | [x] harness CLI / gate / routing | [ ] | [x] |
+| harness_core.py | `artifact_gate` | [x] harness CLI / gate / routing | [ ] | [x] |
+| initiative.py | `validate_initiative` | [ ] | [ ] | [x] |
+| initiative.py | `approve_discovery` | [ ] | [ ] | [x] |
+| initiative.py | `transition` | [ ] | [x] | [x] |
+| merge_request.py | `build_mr_intent` | [ ] | [ ] | [x] |
+| project_config.py | `config_path` | [x] harness CLI / gate / routing | [ ] | [x] |
+| project_config.py | `config_exists` | [x] harness CLI / gate / routing | [ ] | [x] |
+| project_config.py | `load_config` | [x] harness CLI / gate / routing | [ ] | [x] |
+| project_config.py | `context_error` | [x] harness CLI / gate / routing | [ ] | [x] |
+| project_config.py | `notify_error` | [x] harness CLI / gate / routing | [ ] | [ ] |
+| project_config.py | `configured_notify_target` | [x] harness CLI / gate / routing | [ ] | [ ] |
+| project_config.py | `configured_context` | [x] harness CLI / gate / routing | [ ] | [ ] |
+| project_config.py | `worker_error` | [ ] | [ ] | [x] |
+| project_config.py | `configured_worker` | [ ] | [ ] | [ ] |
+| project_config.py | `resolve_worker_dispatch` | [ ] | [ ] | [ ] |
+| project_config.py | `configured_reviewer` | [x] harness CLI / gate / routing | [ ] | [x] |
+| project_config.py | `publish_error` | [x] harness CLI / gate / routing | [ ] | [ ] |
+| project_config.py | `configured_publish` | [x] harness CLI / gate / routing | [ ] | [ ] |
+| project_config.py | `reviewer_error` | [x] harness CLI / gate / routing | [ ] | [x] |
+| project_config.py | `installed_profiles` | [x] harness CLI / gate / routing | [ ] | [ ] |
+| project_config.py | `hermes_default_reviewer` | [ ] | [ ] | [ ] |
+| project_config.py | `seed_default_reviewer` | [ ] | [ ] | [ ] |
+| project_config.py | `documents_block_error` | [ ] | [ ] | [x] |
+| project_config.py | `documents_error` | [ ] | [ ] | [x] |
+| project_config.py | `configured_documents` | [ ] | [ ] | [ ] |
+| project_config.py | `resolve_documents` | [ ] | [ ] | [x] |
+| project_config.py | `require_ready` | [ ] | [ ] | [x] |
+| project_config.py | `set_documents` | [ ] | [ ] | [x] |
+| project_config.py | `active_board` | [x] harness CLI / gate / routing | [ ] | [ ] |
+| project_config.py | `resolve_board` | [x] harness CLI / gate / routing | [ ] | [x] |
+| project_config.py | `persist_context` | [ ] | [ ] | [x] |
+| project_config.py | `persist_worker_defaults` | [ ] | [ ] | [ ] |
+| project_config.py | `initialize_context` | [ ] | [ ] | [ ] |
+| provider_document.py | `normalize` | [x] gate | [ ] | [ ] |
+| provider_document.py | `content_hash` | [x] gate | [ ] | [x] |
+| provider_document.py | `build_provider_document` | [ ] | [ ] | [x] |
+| provider_document.py | `write_local_document` | [ ] | [ ] | [x] |
+| publish.py | `build_push_argv` | [x] gate publish | [ ] | [x] |
+| publish.py | `build_create_argv` | [x] gate publish | [ ] | [x] |
+| publish.py | `build_existing_argv` | [x] gate publish | [ ] | [x] |
+| publish.py | `build_auth_argv` | [x] gate publish | [ ] | [x] |
+| publish.py | `parse_existing_url` | [x] gate publish | [ ] | [x] |
+| publish.py | `parse_created_url` | [x] gate publish | [ ] | [x] |
+| review_cycle.py | `validate_review` | [ ] | [ ] | [x] |
+| review_cycle.py | `append_revision` | [ ] | [ ] | [x] |
+| review_cycle.py | `append_review_revision` | [ ] | [ ] | [ ] |
+| routing.py | `workspace` | [x] harness CLI / gate / routing | [x] | [x] |
+| routing.py | `route` | [x] harness CLI / gate / routing | [x] | [x] |
+
+## Summary
+
+- Wired: routing context, block guard and block routing, completion gate, publish, trace, core harness/routing/publish primitives, config readers (board, context, reviewer, publish, notify).
+- Not wired (library and tests only): Initiative chain (`initiative` → `execution_package` → `execution_batch` / `card_creation` → `decision` / `review_cycle` → `merge_request` / `followup`), provider document builder (`build_provider_document`, `write_local_document`), blocker/recovery/feedback helpers (`blocker_reporting`, `recovery_policy`, `feedback`), worker defaults (`configured_worker`, `worker_error`, `resolve_worker_dispatch`, `persist_worker_defaults`), documents config (`documents_*`, `configured_documents`, `resolve_documents`, `require_ready`, `set_documents`), reviewer seeding (`hermes_default_reviewer`, `seed_default_reviewer`).
+- No caller and no test: `project_config.py:configured_worker`, `project_config.py:resolve_worker_dispatch`, `project_config.py:hermes_default_reviewer`, `project_config.py:seed_default_reviewer`, `project_config.py:configured_documents`, `project_config.py:persist_worker_defaults`, `project_config.py:initialize_context`, `review_cycle.py:append_review_revision`.
+- Every plugin test file runs under `make test` (`test_native_review_transition.py`, `test_block_routing.py` and the trace integration test skip when the `hermes` CLI is missing).

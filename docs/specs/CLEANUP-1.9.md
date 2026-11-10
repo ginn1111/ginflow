@@ -1,5 +1,5 @@
 ---
-status: draft
+status: completed
 scope: docs/architecture/integration-status.md, docs/architecture/README.md; Makefile
 owner: ginb
 ---
