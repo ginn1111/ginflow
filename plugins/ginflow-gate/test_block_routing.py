@@ -130,17 +130,26 @@ def main():
         t = block(None, "r")
         assert len(fire(t, "r")) == before and status(t) == "blocked"
 
-        # transient: origin comment, assigned gintary, unblocked, no send
+        # transient: origin comment, assigned to configured reviewer, unblocked, no send
         def show(tid):
             return json.loads(hermes(env, "kanban", "--board", BOARD, "show", tid, "--json"))
 
+        reviewer = "  reviewer:\n    profile: repairer\n"
+        write_config("  trace: true\n  notify:\n    target: telegram:123\n" + reviewer)
         t = block("transient", "flaky net\nretry")
         assert len(fire(t, "flaky net\nretry")) == before
         data = show(t)
         note = [c["body"] for c in data["comments"] if c["body"].startswith("[ginflow]")]
         assert len(note) == 1 and all(x in note[0] for x in (
             "origin=worker", "profile=ginb", "run=7", "kind=transient", "flaky net retry")), note
-        assert data["task"]["assignee"] == "gintary" and data["task"]["status"] in ("ready", "todo"), data["task"]
+        assert data["task"]["assignee"] == "repairer" and data["task"]["status"] in ("ready", "todo"), data["task"]
+        # trace on, no reviewer configured: no reassign, escalated like a critical block
+        write_config("  trace: true\n  notify:\n    target: telegram:123\n")
+        t = block("transient", "r")
+        got = fire(t, "r")
+        assert len(got) == before + 1 and got[-1].startswith("send --to telegram:123 -q "), got[before:]
+        assert show(t)["task"]["assignee"] == "ginb" and status(t) == "blocked"
+        before = len(got)
         # trace off: native, no assignment
         write_config("")
         t = block("transient", "r")
@@ -191,17 +200,17 @@ def main():
         (tmp / "fail").unlink()
 
         # second transient block on same task: critical push, no reassign, still blocked
-        write_config("  trace: true\n  notify:\n    target: telegram:1\n")
+        write_config("  trace: true\n  notify:\n    target: telegram:1\n" + reviewer)
         t = block("transient", "flaky")
         n = len(fire(t, "flaky"))  # first: auto-repair, no send
-        assert show(t)["task"]["assignee"] == "gintary"
+        assert show(t)["task"]["assignee"] == "repairer"
         hermes(env, "kanban", "--board", BOARD, "claim", t)
         hermes(env, "kanban", "--board", BOARD, "block", t, "flaky again", "--kind", "transient")
         got = fire(t, "flaky again")
         assert len(got) == n + 1 and got[-1].startswith("send --to telegram:1 -q ") and "flaky again" in got[-1], got[n:]
         data = show(t)
         # hook never unblocks/reassigns; Hermes core may itself escalate a re-blocked task to triage
-        assert data["task"]["assignee"] == "gintary" and data["task"]["status"] in ("blocked", "triage"), data["task"]
+        assert data["task"]["assignee"] == "repairer" and data["task"]["status"] in ("blocked", "triage"), data["task"]
         assert len([c for c in data["comments"] if c["body"].startswith("[ginflow] origin=worker")]) == 1
 
         # hook failure (hermes send missing/erroring) never raises

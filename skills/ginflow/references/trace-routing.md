@@ -29,9 +29,9 @@ If the push fails, a card comment `[ginflow] push failed: ...` is written. Inval
 
 ## Repairable route
 
-First `transient` block per task: write card comment `[ginflow] origin=worker profile=<p> run=<id> kind=transient reason=<reason>`, assign to `gintary`, unblock. No push.
+First `transient` block per task: write card comment `[ginflow] origin=worker profile=<p> run=<id> kind=transient reason=<reason>`, assign to the `ginflow.reviewer.profile` from `.ginflow.yaml`, unblock. No push. No reviewer configured: handled as critical (no reassign).
 
-Second `transient` block on the same task (detected by existing `[ginflow] origin=worker` comment): treated as critical, full chain above, no reassign, stays `blocked`. One auto-repair per task prevents worker/`gintary` ping-pong.
+Second `transient` block on the same task (detected by existing `[ginflow] origin=worker` comment): treated as critical, full chain above, no reassign, stays `blocked`. One auto-repair per task prevents worker/reviewer ping-pong.
 
 ## Injected repair context
 

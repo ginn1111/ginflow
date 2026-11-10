@@ -83,12 +83,13 @@ def _comment(task_id: str, board: str | None, message: str) -> None:
     _core.kanban_run(board, "comment", task_id, message)
 
 
-def _route_repairable(task_id: str, board: str | None, profile: object, run_id: object, reason: object) -> None:
-    """Transient block: origin=worker comment, assign gintary, unblock."""
+def _route_repairable(task_id: str, board: str | None, profile: object, run_id: object, reason: object,
+                      repairer: str) -> None:
+    """Transient block: origin=worker comment, assign the configured reviewer, unblock."""
     _comment(task_id, board, _sanitize(
         f"[ginflow] origin=worker profile={_sanitize(profile) or 'unknown'} run={run_id} "
         f"kind=transient reason={_sanitize(reason) or '(no reason given)'}"))
-    for step in (("assign", task_id, "gintary"), ("unblock", task_id)):
+    for step in (("assign", task_id, repairer), ("unblock", task_id)):
         _core.kanban_run(board, *step)
 
 
@@ -137,8 +138,10 @@ def on_task_blocked(task_id: str = "", board: str | None = None, assignee: str |
             return
         if kind == "transient":
             # Prior auto-repair marker lives on the card; a repeat becomes critical (no reassign).
-            if not any(str(c.get("body") or "").startswith(_REPAIR_MARKER) for c in task["comments"]):
-                _route_repairable(task_id, board, assignee or task.get("assignee"), run_id, reason)
+            # No ginflow.reviewer.profile: nobody to hand off to, so escalate like a critical block.
+            repairer = _config.configured_reviewer(path)
+            if repairer and not any(str(c.get("body") or "").startswith(_REPAIR_MARKER) for c in task["comments"]):
+                _route_repairable(task_id, board, assignee or task.get("assignee"), run_id, reason, repairer)
                 return
         error = _config.context_error(path)
         if error:
