@@ -1,4 +1,4 @@
-.PHONY: install uninstall install-test verify verify-strict doctor doctor-deps community-update clean lint test lifecycle-test plugin-test trace-test
+.PHONY: install uninstall install-test verify doctor doctor-deps community-update clean lint test lifecycle-test plugin-test trace-test
 
 # === Pre-flight ===
 doctor:
@@ -22,11 +22,6 @@ uninstall:
 verify:
 	python3 skills/ginflow/scripts/validate-harness.py --setup-repo . --json
 
-## Verify profiles and fail on canonical repo drift via ginflow harness
-verify-strict:
-	@test -n "$(PROFILES)" || (echo 'No active Hermes profile found; run `hermes profile use <name>` or pass PROFILES="<name>"' >&2; exit 2)
-	python3 skills/ginflow/scripts/validate-harness.py --setup-repo . --json
-
 # === Community assets ===
 ## Clone/pull community skill repos
 community-update:
@@ -42,7 +37,6 @@ clean:
 lint:
 	bash -n scripts/*.sh
 	@if compgen -G 'scripts/*.py' >/dev/null; then python3 -m py_compile scripts/*.py; fi
-	bash -n skills/ginflow/scripts/*.sh
 	python3 -m py_compile skills/ginflow/scripts/*.py
 	@echo "lint ok"
 

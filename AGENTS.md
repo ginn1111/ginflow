@@ -31,8 +31,7 @@ Ginflow is a setup and integration repository for Hermes Agent. It owns Ginflow 
 - `make lifecycle-test` — canonical Ginflow flat-flow integration test.
 - `make plugin-test` — Ginflow gate tests plus trace tests.
 - `make install-test` — installer test.
-- `make verify PROFILES="<profile>"` — validate installed integrations; profile is required.
-- `make verify-strict PROFILES="<profile>"` — same validation with canonical source-drift failure.
+- `make verify` — validate installed integrations via the Ginflow harness.
 - `make lint && make test` before declaring setup-repo changes done.
 - Run target-project verification from target repo; never substitute setup verification for product checks.
 
@@ -67,4 +66,4 @@ Default vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-
 
 ### Domain docs
 
-Single-context layout — `CONTEXT.md` + `docs/adr/` at the repo root, created lazily. See `docs/agents/domain.md`.
+Single-context layout — `GLOSSARY.md` at repository root and ADRs under `docs/adrs/`. See `docs/agents/domain.md`.

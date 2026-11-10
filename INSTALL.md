@@ -142,13 +142,11 @@ hermes profile import <profile>.tar.gz
 ## Verify and test
 
 ```bash
-make verify PROFILES="profile-a"
-make verify-strict PROFILES="profile-a"
 make test
 make verify
 ```
 
-`make test` runs the standalone core, artifact-guidance, Kanban-harness, plugin, recovery, and installation-independent guidance checks. `make verify` runs the Ginflow harness without requiring a target workspace or Hermes profile.
+`make test` runs lint plus core, lifecycle, plugin, and installer checks. `make verify` runs the Ginflow harness without requiring a target workspace or Hermes profile.
 
 ## Consume the artifacts
 

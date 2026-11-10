@@ -59,7 +59,6 @@ Optional: `scripts/setup.sh --apply <profile>` also adds the CodeGraph MCP serve
 ```bash
 cd ~/.ginflow
 make verify
-make verify-strict PROFILES="<profile>"
 ```
 
 ## 5. Prepare a target project

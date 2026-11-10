@@ -62,7 +62,7 @@ Canonical diagram lane: bottom of page **Ginflow system** (cells `pd-*`). Each W
 5. For github/linear, mapped tracker Issue status updates before each Hermes transition (workers: start, block, resume, review-request; reviewers: request-changes, completion), then re-fetch. Missing mapping or failure fails closed.
 6. `ginflow-gate` validates evidence without provider credentials; canonical project verification is still required.
 
-Hermes Kanban remains lifecycle authority throughout. Details: [`GINFLOW-V2.md`](../specs/GINFLOW-V2.md#provider-documents), [ADR 0001](../adrs/0001-artifact-first-execution-packages.md).
+Hermes Kanban remains lifecycle authority throughout. Details: [ADR 0001](../adrs/0001-artifact-first-execution-packages.md).
 
 ## Derived flow
 
