@@ -57,6 +57,8 @@ def _read_config(file: Path) -> dict | None:
 
 def _read_simple_config(file: Path) -> dict | None:
     """Read flat ginflow config fields needed by tracing without PyYAML."""
+    # ponytail: deliberate copy of skills/ginflow/lib/project_config parsing; ginflow-trace
+    # stays standalone (no skill lib import). Keep `ginflow.trace` / GINFLOW_LOG semantics in sync.
     try:
         lines = file.read_text(encoding="utf-8").splitlines()
     except OSError:

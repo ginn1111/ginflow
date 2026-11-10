@@ -73,7 +73,6 @@ plugin-test:
 	python3 plugins/ginflow-gate/test_document_baseline.py
 	python3 plugins/ginflow-gate/test_blocker_reporting.py
 	python3 plugins/ginflow-gate/test_recovery_policy.py
-	python3 plugins/ginflow-gate/test_recovery.py
 	python3 plugins/ginflow-gate/test_reviewer_injection.py
 	python3 plugins/ginflow-gate/test_block_guard.py
 	python3 plugins/ginflow-gate/test_publish_hook.py

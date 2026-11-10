@@ -182,59 +182,6 @@ def _ginflow_loaded() -> bool:
         return False
 
 
-def _kanban_board_state() -> str | None:
-    """Return a snapshot of the Kanban board as concise text, or None."""
-    try:
-        current = Path.cwd()
-        if _context_error(current) or not _config_exists(current):
-            return None
-        board = _resolve_board(current)
-        command = ["hermes", "kanban"] + (["--board", board] if board else []) + ["list", "--json"]
-        result = subprocess.run(
-            command,
-            text=True,
-            capture_output=True,
-            timeout=15,
-        )
-    except FileNotFoundError:
-        return None
-    except OSError as exc:
-        logger.warning("ginflow-gate routing: kanban list unavailable: %s", exc)
-        return None
-    except subprocess.TimeoutExpired:
-        return None
-
-    if result.returncode != 0:
-        return None
-
-    if not result.stdout.strip():
-        return None
-
-    try:
-        data = json.loads(result.stdout)
-    except json.JSONDecodeError:
-        return None
-
-    tasks = data if isinstance(data, list) else data.get("tasks", data.get("items", [data]))
-    current = Path.cwd().resolve()
-    tasks = [task for task in tasks if _workspace(task) == current]
-    if not tasks:
-        return None
-
-    lines: list[str] = []
-    for task in tasks:
-        tid = task.get("id", "?")
-        title = task.get("title", "?")
-        status = task.get("status", "?")
-        assignee = task.get("assignee") or ""
-        workspace = task.get("workspace_path") or ""
-        ws_suffix = f" @ {workspace}" if workspace else ""
-        assign_suffix = f" [{assignee}]" if assignee else ""
-        lines.append(f"- {tid}: {title} ({status}){assign_suffix}{ws_suffix}")
-
-    return "\n".join(lines) if lines else None
-
-
 def _route(tasks: list[dict[str, Any]], explicit_id: str | None = None) -> dict[str, Any]:
     """Compatibility adapter: inject Hermes cwd into core policy."""
     return _route_policy(tasks, Path.cwd(), explicit_id)
@@ -411,14 +358,7 @@ def _load_tasks() -> list[dict[str, Any]]:
         current = Path.cwd()
         if _context_error(current) or not _config_exists(current):
             return []
-        board = _resolve_board(current)
-        command = ["hermes", "kanban"] + (["--board", board] if board else []) + ["list", "--json"]
-        result = subprocess.run(
-            command,
-            text=True,
-            capture_output=True,
-            timeout=15,
-        )
+        result = _core.kanban_run(_resolve_board(current), "list", "--json", timeout=15)
     except (FileNotFoundError, OSError, subprocess.TimeoutExpired):
         return []
     if result.returncode != 0 or not result.stdout.strip():

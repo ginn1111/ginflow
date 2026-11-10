@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import hashlib
 import importlib.util
-import json
 import os
 import subprocess
 from pathlib import Path
@@ -79,6 +77,7 @@ _core = skill_lib.load("harness_core")
 artifact_gate = _core.artifact_gate
 normalize_card = _core.normalize_card
 _project_config = skill_lib.load("project_config")
+_content_hash = skill_lib.load("provider_document").content_hash
 
 
 def _block(message: str) -> dict[str, str]:
@@ -87,14 +86,11 @@ def _block(message: str) -> dict[str, str]:
 
 @trace
 def load_card(task_id: str, board: str | None = None) -> dict:
-    command = ["hermes", "kanban"]
-    if board:
-        command += ["--board", board]
-    command += ["show", task_id, "--json"]
-    result = subprocess.run(command, text=True, capture_output=True)
-    if result.returncode:
-        raise RuntimeError(result.stderr.strip() or result.stdout.strip() or f"unable to read card {task_id}")
-    return normalize_card(json.loads(result.stdout))
+    # Board: explicit, HERMES_KANBAN_BOARD, cwd .ginflow.yaml, then Hermes current board.
+    document, error = _core.load_kanban_card(task_id, board)
+    if error:
+        raise RuntimeError(error)
+    return normalize_card(document)
 
 
 @trace
@@ -142,10 +138,7 @@ def _document_error(card: dict, metadata: dict, target: Path) -> str | None:
     )
     if shown.returncode:
         return f"document {links[0]} is not committed at {baseline['commit']}"
-    # Same normalization as provider_document.content_hash: newlines, trailing spaces only.
-    lines = shown.stdout.decode("utf-8").replace("\r\n", "\n").replace("\r", "\n").split("\n")
-    text = "\n".join(line.rstrip() for line in lines).rstrip("\n") + "\n"
-    if hashlib.sha256(text.encode("utf-8")).hexdigest() != baseline["content_hash"]:
+    if _content_hash(shown.stdout.decode("utf-8")) != baseline["content_hash"]:
         return f"document_baseline.content_hash does not match committed {links[0]}"
     return None
 

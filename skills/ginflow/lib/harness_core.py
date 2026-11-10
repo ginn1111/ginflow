@@ -122,16 +122,29 @@ def normalize_card(document):
     return card
 
 
+def kanban_argv(board, *args):
+    """`hermes kanban [--board B] <args>`; the one place the CLI shape lives."""
+    return ["hermes", "kanban", *(["--board", board] if board else []), *args]
+
+
+def kanban_run(board, *args, timeout=30):
+    return subprocess.run(kanban_argv(board, *args), text=True, capture_output=True, timeout=timeout)
+
+
+def kanban_json(board, *args, timeout=30):
+    """Run a `--json` kanban command; raise RuntimeError on failure."""
+    result = kanban_run(board, *args, timeout=timeout)
+    if result.returncode:
+        raise RuntimeError(result.stderr.strip() or result.stdout.strip() or f"hermes kanban {' '.join(args)} failed")
+    return json.loads(result.stdout or "null")
+
+
 def load_kanban_card(task_id, board=None, workspace=None):
-    command = ["hermes", "kanban"]
     project = Path(workspace or Path.cwd())
     config_error = context_error(project)
     if config_error:
         return {}, f"Project-local Ginflow config is invalid: {config_error}"
-    resolved_board = resolve_board(project, board)
-    if resolved_board:
-        command += ["--board", resolved_board]
-    command += ["show", task_id, "--json"]
+    command = kanban_argv(resolve_board(project, board), "show", task_id, "--json")
     try:
         result = subprocess.run(command, text=True, capture_output=True)
     except OSError as error:

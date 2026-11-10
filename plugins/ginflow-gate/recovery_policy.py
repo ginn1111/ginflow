@@ -5,9 +5,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-MAX_ATTEMPTS = 3
+try:  # one source for the blocker contract
+    from .blocker_reporting import MAX_ATTEMPTS, NON_RECOVERABLE_KINDS
+except ImportError:
+    from blocker_reporting import MAX_ATTEMPTS, NON_RECOVERABLE_KINDS
+
 RECOVERABLE_KINDS = frozenset({"transient", "unknown"})
-NON_RECOVERABLE_KINDS = frozenset({"config_error", "persist_error", "human_input"})
 TERMINAL_STATUSES = frozenset({"done", "cancelled", "archived"})
 _REQUIRED_EVENT_FIELDS = (
     "event_id",

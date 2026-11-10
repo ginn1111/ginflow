@@ -30,6 +30,7 @@ except ImportError:
     skill_lib = importlib.util.module_from_spec(_skill_lib_spec)
     _skill_lib_spec.loader.exec_module(skill_lib)
 _config = skill_lib.load("project_config")
+_core = skill_lib.load("harness_core")
 
 
 def _sanitize(text: object) -> str:
@@ -46,11 +47,7 @@ def _trace_on(workspace: Path) -> bool:
 
 
 def _load_task(task_id: str, board: str | None) -> dict:
-    command = ["hermes", "kanban"] + (["--board", board] if board else []) + ["show", task_id, "--json"]
-    result = subprocess.run(command, text=True, capture_output=True, timeout=30)
-    if result.returncode:
-        raise RuntimeError(result.stderr.strip() or "unable to read task")
-    data = json.loads(result.stdout)
+    data = _core.kanban_json(board, "show", task_id, "--json")
     task = data["task"]
     task["comments"] = data.get("comments") or []
     # `show --json` omits tasks.block_kind; the latest block event carries it.
@@ -63,8 +60,7 @@ def _load_task(task_id: str, board: str | None) -> dict:
 
 
 def _native_destination(task_id: str, board: str | None) -> str | None:
-    command = ["hermes", "kanban"] + (["--board", board] if board else []) + ["notify-list", "--json", task_id]
-    result = subprocess.run(command, text=True, capture_output=True, timeout=30)
+    result = _core.kanban_run(board, "notify-list", "--json", task_id)
     if result.returncode:
         return None
     for sub in json.loads(result.stdout or "[]"):
@@ -84,8 +80,7 @@ def _push(destination: str, message: str) -> bool:
 
 
 def _comment(task_id: str, board: str | None, message: str) -> None:
-    command = ["hermes", "kanban"] + (["--board", board] if board else []) + ["comment", task_id, message]
-    subprocess.run(command, text=True, capture_output=True, timeout=30)
+    _core.kanban_run(board, "comment", task_id, message)
 
 
 def _route_repairable(task_id: str, board: str | None, profile: object, run_id: object, reason: object) -> None:
@@ -93,9 +88,8 @@ def _route_repairable(task_id: str, board: str | None, profile: object, run_id: 
     _comment(task_id, board, _sanitize(
         f"[ginflow] origin=worker profile={_sanitize(profile) or 'unknown'} run={run_id} "
         f"kind=transient reason={_sanitize(reason) or '(no reason given)'}"))
-    base = ["hermes", "kanban"] + (["--board", board] if board else [])
-    for step in (["assign", task_id, "gintary"], ["unblock", task_id]):
-        subprocess.run(base + step, text=True, capture_output=True, timeout=30)
+    for step in (("assign", task_id, "gintary"), ("unblock", task_id)):
+        _core.kanban_run(board, *step)
 
 
 def guard_block(args: dict, task_id: str = "", **_: object) -> dict | None:

@@ -21,6 +21,7 @@ except ImportError:
     skill_lib = importlib.util.module_from_spec(_skill_lib_spec)
     _skill_lib_spec.loader.exec_module(skill_lib)
 core = skill_lib.load("publish")
+_kanban = skill_lib.load("harness_core")
 
 _PENDING: dict[str, dict[str, Any]] = {}
 _AUTH_OK: set[tuple[str, str]] = set()
@@ -55,10 +56,7 @@ def auth_error(config: dict[str, Any], cwd: str | Path | None = None) -> str | N
 
 
 def _show(task_id: str, board: str | None) -> dict:
-    result = _run(["hermes", "kanban"] + (["--board", board] if board else []) + ["show", task_id, "--json"], timeout=30)
-    if result.returncode:
-        raise RuntimeError(result.stderr.strip() or f"unable to read card {task_id}")
-    return json.loads(result.stdout)["task"]
+    return _kanban.kanban_json(board, "show", task_id, "--json")["task"]
 
 
 def _body(card: dict, metadata: dict) -> str:
@@ -136,7 +134,7 @@ def publish(job: dict[str, Any]) -> tuple[str | None, str | None]:
 
 
 def _comment(task_id: str, board: str | None, text: str) -> None:
-    _run(["hermes", "kanban"] + (["--board", board] if board else []) + ["comment", task_id, text], timeout=30)
+    _kanban.kanban_run(board, "comment", task_id, text)
 
 
 def finish(task_id: str, result: Any, kwargs: dict) -> None:
