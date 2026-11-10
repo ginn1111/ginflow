@@ -17,7 +17,6 @@ import json
 import logging
 import os
 import subprocess
-import sys
 from pathlib import Path
 from typing import Any
 
@@ -34,50 +33,23 @@ except ImportError:
     trace = _trace_module.trace
 
 
-def _harness_core_path() -> Path:
-    plugin = Path(__file__).resolve()
-    real_home = Path(os.environ.get("HERMES_REAL_HOME", str(Path.home()))).expanduser().resolve()
-    candidates = (
-        plugin.parents[2] / "skills/ginflow/lib/harness_core.py",
-        real_home / ".agents/skills/ginflow/lib/harness_core.py",
-    )
-    for candidate in candidates:
-        if candidate.is_file():
-            return candidate
-    raise ImportError("unable to locate Ginflow skill harness core; checked: " + ", ".join(map(str, candidates)))
-
-
-CORE = _harness_core_path()
-if str(CORE.parent) not in sys.path:
-    sys.path.insert(0, str(CORE.parent))
-_spec = importlib.util.spec_from_file_location("ginflow_harness_core", CORE)
-if not _spec or not _spec.loader:
-    raise ImportError(f"unable to load Ginflow harness core: {CORE}")
-_core = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(_core)
+try:
+    from . import skill_lib
+except ImportError:
+    _skill_lib_spec = importlib.util.spec_from_file_location("ginflow_gate_skill_lib", Path(__file__).with_name("skill_lib.py"))
+    if not _skill_lib_spec or not _skill_lib_spec.loader:
+        raise ImportError("unable to load skill lib loader")
+    skill_lib = importlib.util.module_from_spec(_skill_lib_spec)
+    _skill_lib_spec.loader.exec_module(skill_lib)
+_core = skill_lib.load("harness_core")
 startup_gate = _core.startup_gate
-CORE_ROUTING_CANDIDATES = (
-    Path(__file__).resolve().parents[2] / "core/ginflow-core/routing.py",
-    Path(__file__).resolve().parent / "lib/routing.py",
-)
-CORE_ROUTING = next((path for path in CORE_ROUTING_CANDIDATES if path.is_file()), None)
-if CORE_ROUTING is None:
-    raise ImportError("unable to locate Ginflow routing core; checked: " + ", ".join(map(str, CORE_ROUTING_CANDIDATES)))
-_routing_spec = importlib.util.spec_from_file_location("ginflow_routing_core", CORE_ROUTING)
-if not _routing_spec or not _routing_spec.loader:
-    raise ImportError(f"unable to load Ginflow routing core: {CORE_ROUTING}")
-_routing_core = importlib.util.module_from_spec(_routing_spec)
-_routing_spec.loader.exec_module(_routing_core)
+_routing_core = skill_lib.load("routing")
 _route_policy = _routing_core.route
 _workspace = _routing_core.workspace
 _resolve_board = _core.resolve_board
 _context_error = _core.context_error
 _config_exists = _core.config_exists
-_publish_config_spec = importlib.util.spec_from_file_location("ginflow_routing_project_config", CORE.with_name("project_config.py"))
-if not _publish_config_spec or not _publish_config_spec.loader:
-    raise ImportError("unable to load Ginflow project config")
-_publish_config = importlib.util.module_from_spec(_publish_config_spec)
-_publish_config_spec.loader.exec_module(_publish_config)
+_publish_config = skill_lib.load("project_config")
 try:
     from . import publish as _publish
 except ImportError:

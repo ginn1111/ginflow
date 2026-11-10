@@ -10,7 +10,7 @@ Ginflow is a setup and integration repository for Hermes Agent. It owns Ginflow 
 
 ## Boundaries and layout
 - `skills/ginflow/` — workflow contract, templates, references, validator, tests
-- `core/ginflow-core/` — reusable routing primitives
+- `skills/ginflow/lib/` — single home for core modules (harness, config, routing, publish, Execution Package primitives) and their tests
 - `plugins/ginflow-gate/` — completion policy plugin and tests
 - `plugins/ginflow-trace/` — optional trace plugin and tests
 - `scripts/` — setup, installation, verification, and test helpers

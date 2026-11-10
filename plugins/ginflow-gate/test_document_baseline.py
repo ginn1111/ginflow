@@ -7,7 +7,7 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "core/ginflow-core"))
+sys.path.insert(0, str(ROOT / "skills/ginflow/lib"))
 from provider_document import build_provider_document, write_local_document  # noqa: E402
 
 spec = importlib.util.spec_from_file_location("ginflow_gate_gate_doc", ROOT / "plugins/ginflow-gate/gate.py")

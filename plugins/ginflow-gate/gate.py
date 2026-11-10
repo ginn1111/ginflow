@@ -67,30 +67,18 @@ except ImportError:
     _publish_spec.loader.exec_module(_publish)
 
 
-def _harness_core_path() -> Path:
-    plugin = Path(__file__).resolve()
-    real_home = Path(os.environ.get("HERMES_REAL_HOME", str(Path.home()))).expanduser().resolve()
-    candidates = (
-        plugin.parents[2] / "skills/ginflow/lib/harness_core.py",
-        real_home / ".agents/skills/ginflow/lib/harness_core.py",
-    )
-    for candidate in candidates:
-        if candidate.is_file():
-            return candidate
-    raise ImportError("unable to locate Ginflow skill harness core; checked: " + ", ".join(map(str, candidates)))
-
-
-CORE = _harness_core_path()
-_spec = importlib.util.spec_from_file_location("ginflow_harness_core", CORE)
-if not _spec or not _spec.loader:
-    raise ImportError(f"unable to load Ginflow harness core: {CORE}")
-_core = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(_core)
+try:
+    from . import skill_lib
+except ImportError:
+    _skill_lib_spec = importlib.util.spec_from_file_location("ginflow_gate_skill_lib", Path(__file__).with_name("skill_lib.py"))
+    if not _skill_lib_spec or not _skill_lib_spec.loader:
+        raise ImportError("unable to load skill lib loader")
+    skill_lib = importlib.util.module_from_spec(_skill_lib_spec)
+    _skill_lib_spec.loader.exec_module(skill_lib)
+_core = skill_lib.load("harness_core")
 artifact_gate = _core.artifact_gate
 normalize_card = _core.normalize_card
-_cfg_spec = importlib.util.spec_from_file_location("ginflow_project_config", CORE.with_name("project_config.py"))
-_project_config = importlib.util.module_from_spec(_cfg_spec)
-_cfg_spec.loader.exec_module(_project_config)
+_project_config = skill_lib.load("project_config")
 
 
 def _block(message: str) -> dict[str, str]:

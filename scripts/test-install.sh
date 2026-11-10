@@ -22,7 +22,7 @@ bash "$ROOT/scripts/install.sh" install
 [[ -f "$SKILL/SKILL.md" ]]
 [[ -f "$SKILL/lib/harness_core.py" ]]
 for profile in alpha beta; do
-  [[ -f "$PROFILES/$profile/plugins/ginflow-gate/plugin.yaml" && -f "$PROFILES/$profile/plugins/ginflow-gate/lib/routing.py" ]]
+  [[ -f "$PROFILES/$profile/plugins/ginflow-gate/plugin.yaml" && ! -e "$PROFILES/$profile/plugins/ginflow-gate/lib" ]]
   [[ -f "$PROFILES/$profile/plugins/ginflow-trace/plugin.yaml" ]]
   [[ ! -e "$PROFILES/$profile/plugins/with-chatgpt" ]]
   [[ ! -e "$PROFILES/$profile/skills/ginflow" ]]
@@ -30,17 +30,19 @@ done
 [[ ! -e "$PROFILES/not-a-profile/plugins" ]]
 [[ -f "$GINFLOW_INSTALL_MANIFEST" ]]
 
-# Copied gate loads from a profile: harness core from ~/.agents/skills, routing from bundled lib, trace from sibling plugin.
+# Copied gate package loads from a profile: every core module from ~/.agents/skills/ginflow/lib.
 python3 -I - "$PROFILES/alpha/plugins/ginflow-gate" <<PY
 import importlib.util, sys
 from pathlib import Path
 gate = Path(sys.argv[1])
-spec = importlib.util.spec_from_file_location("copied_gate", gate / "gate.py")
+spec = importlib.util.spec_from_file_location("copied_gate", gate / "__init__.py", submodule_search_locations=[str(gate)])
 module = importlib.util.module_from_spec(spec)
+sys.modules["copied_gate"] = module
 spec.loader.exec_module(module)
-assert module.CORE.is_relative_to(gate.resolve().parents[4] / ".agents"), module.CORE
-spec = importlib.util.spec_from_file_location("copied_routing", gate / "routing.py")
-spec.loader.exec_module(importlib.util.module_from_spec(spec))
+lib = gate.resolve().parents[4] / ".agents/skills/ginflow/lib"
+assert sys.modules["copied_gate.skill_lib"].LIB == lib, sys.modules["copied_gate.skill_lib"].LIB
+for name in ("harness_core", "project_config", "routing", "publish"):
+    assert Path(sys.modules[f"ginflow_lib_{name}"].__file__).parent == lib, name
 PY
 
 python3 - "$PROFILES/alpha/config.yaml" <<'PY'

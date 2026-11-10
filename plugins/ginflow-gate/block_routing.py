@@ -21,11 +21,15 @@ _REPAIR_MARKER = "[ginflow] origin=worker"
 MAX_BODY = 800
 logger = logging.getLogger(__name__)
 
-_spec = importlib.util.spec_from_file_location(
-    "ginflow_project_config", Path(__file__).resolve().parents[2] / "skills/ginflow/lib/project_config.py"
-)
-_config = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(_config)
+try:
+    from . import skill_lib
+except ImportError:
+    _skill_lib_spec = importlib.util.spec_from_file_location("ginflow_gate_skill_lib", Path(__file__).with_name("skill_lib.py"))
+    if not _skill_lib_spec or not _skill_lib_spec.loader:
+        raise ImportError("unable to load skill lib loader")
+    skill_lib = importlib.util.module_from_spec(_skill_lib_spec)
+    _skill_lib_spec.loader.exec_module(skill_lib)
+_config = skill_lib.load("project_config")
 
 
 def _sanitize(text: object) -> str:

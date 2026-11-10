@@ -44,19 +44,19 @@ lint:
 test: lint core-test lifecycle-test plugin-test install-test
 
 core-test:
-	python3 core/ginflow-core/test_execution_package.py
-	python3 core/ginflow-core/test_card_creation.py
-	python3 core/ginflow-core/test_provider_document.py
-	python3 core/ginflow-core/test_initiative.py
-	python3 core/ginflow-core/test_execution_batch.py
-	python3 core/ginflow-core/test_decision.py
-	python3 core/ginflow-core/test_review_cycle.py
-	python3 core/ginflow-core/test_followup.py
-	python3 core/ginflow-core/test_merge_request.py
-	python3 core/ginflow-core/test_publish.py
-	python3 core/ginflow-core/test_initiative_workflow.py
+	python3 skills/ginflow/lib/test_execution_package.py
+	python3 skills/ginflow/lib/test_card_creation.py
+	python3 skills/ginflow/lib/test_provider_document.py
+	python3 skills/ginflow/lib/test_initiative.py
+	python3 skills/ginflow/lib/test_execution_batch.py
+	python3 skills/ginflow/lib/test_decision.py
+	python3 skills/ginflow/lib/test_review_cycle.py
+	python3 skills/ginflow/lib/test_followup.py
+	python3 skills/ginflow/lib/test_merge_request.py
+	python3 skills/ginflow/lib/test_publish.py
+	python3 skills/ginflow/lib/test_initiative_workflow.py
 
-# ponytail: keep core tests as direct scripts until shared repository test runner exists.
+# ponytail: keep lib tests as direct scripts until shared repository test runner exists.
 
 ## Canonical ginflow flat-flow integration test (single command, per-step PASS/FAIL)
 lifecycle-test:

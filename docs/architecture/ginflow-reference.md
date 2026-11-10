@@ -14,7 +14,7 @@ The repository addresses a recurring failure mode: a raw prompt does not by itse
 |---|---|---|---|
 | Hermes Agent | Profile/runtime lifecycle, skill loading, tools, Kanban, and execution | `skills/ginflow/SKILL.md` (core split and startup) | External runtime; this repo documents integration contracts |
 | Ginflow skill | Workflow vocabulary, route/output rules, startup/close/restart guidance, artifact layout, and distributed harness validation | `skills/ginflow/SKILL.md`, `skills/ginflow/lib/harness_core.py` | Shared procedural guidance and validation code distributed to Hermes consumers |
-| Ginflow routing core | Reusable routing primitives and structured workflow model | `core/ginflow-core/routing.py` | Library code packaged with installed plugins; target projects do not own its implementation |
+| Ginflow routing core | Reusable routing primitives and structured workflow model | `skills/ginflow/lib/routing.py` | Library code shipped with the installed skill and loaded by the plugin; target projects do not own its implementation |
 | `ginflow-gate` plugin | Hermes integration hooks, routing context, completion validation, feedback/recovery helpers | `plugins/ginflow-gate/plugin.yaml`, `plugins/ginflow-gate/*.py` | Gate/context provider; not a semantic classifier or replacement runtime |
 | Kanban card | Durable governed-work assignment: objective, scope, acceptance, workspace, assignee, status, concise link to the provider document, progress | `skills/ginflow/SKILL.md`; `plugins/ginflow-gate/` | Hermes Kanban is lifecycle authority |
 | Provider document | One canonical governance record per Work Unit (`local`, `github`, or `linear`) with provider-neutral reference and `document_baseline` | `docs/adrs/0001-artifact-first-execution-packages.md`, `GLOSSARY.md` | Content authority; adapters hold credentials, the gate validates evidence only |
@@ -46,7 +46,7 @@ The detailed branch model is in [`ginflow-flow.md`](./ginflow-flow.md), and the 
 
 | Dependency | Role | Evidence | Version/status |
 |---|---|---|---|
-| Python standard library | XML checks, scripts, skill/plugin implementation and tests | `skills/ginflow/lib/*.py`, `core/ginflow-core/*.py`, `plugins/ginflow-gate/*.py`, `skills/ginflow/scripts/*.py` | No package version pinned in this repository |
+| Python standard library | XML checks, scripts, skill/plugin implementation and tests | `skills/ginflow/lib/*.py`, `plugins/ginflow-gate/*.py`, `skills/ginflow/scripts/*.py` | No package version pinned in this repository |
 | POSIX shell utilities | Make targets, setup/install/verification scripts | `Makefile`, `scripts/*.sh` | Environment-provided; exact versions unknown |
 | Make | Canonical setup verification entry point | `Makefile` | Environment-provided; exact version unknown |
 | Draw.io XML format | Editable architecture diagrams | `docs/architecture/*.drawio` | File format; editor/runtime version unknown |
@@ -112,5 +112,5 @@ No committed `pyproject.toml`, `package.json`, `go.mod`, `Cargo.toml`, or requir
 2. [`ginflow-flow.md`](./ginflow-flow.md) — route and ownership flow.
 3. [`ginflow-system.drawio`](./ginflow-system.drawio) — editable architecture source.
 4. [`../../skills/ginflow/SKILL.md`](../../skills/ginflow/SKILL.md) — normative workflow contract.
-5. [`../../plugins/ginflow-gate/`](../../plugins/ginflow-gate/) and [`../../core/ginflow-core/`](../../core/ginflow-core/) — implementation evidence.
+5. [`../../plugins/ginflow-gate/`](../../plugins/ginflow-gate/) and [`../../skills/ginflow/lib/`](../../skills/ginflow/lib/) — implementation evidence.
 6. [`../specs/GINFLOW-14.md`](../specs/GINFLOW-14.md) — this documentation task's contract.

@@ -119,9 +119,8 @@ def install(profile_names: list[str]) -> None:
         uninstall()
     source_skill = ROOT / "skills/ginflow"
     plugin_names = ("ginflow-gate", "ginflow-trace")
-    core_routing = ROOT / "core/ginflow-core/routing.py"
-    if not source_skill.is_dir() or not core_routing.is_file() or not core_routing.with_name("publish.py").is_file() or not all((ROOT / "plugins" / n).is_dir() for n in plugin_names):
-        fail("setup-repo skill, routing core, or plugin source directory is missing")
+    if not (source_skill / "lib/harness_core.py").is_file() or not all((ROOT / "plugins" / n).is_dir() for n in plugin_names):
+        fail("setup-repo skill lib or plugin source directory is missing")
 
     real_home = Path(os.environ.get("HERMES_REAL_HOME", str(Path.home()))).expanduser().resolve()
     profiles_dir = Path(os.environ.get("HERMES_PROFILES_DIR", str(real_home / ".hermes/profiles"))).expanduser().resolve()
@@ -151,11 +150,6 @@ def install(profile_names: list[str]) -> None:
             if destination.exists() or destination.is_symlink():
                 remove_path(destination)
             copy_tree(source, destination)
-            if destination.name == "ginflow-gate":
-                # Copied gate cannot reach repo core/; it falls back to its own lib/routing.py.
-                (destination / "lib").mkdir(exist_ok=True)
-                shutil.copy2(core_routing, destination / "lib/routing.py")
-                shutil.copy2(core_routing.with_name("publish.py"), destination / "lib/publish.py")
             entry = {"path": str(destination), "hash": sha256(destination), "backup": backup}
             if key == "skill":
                 manifest["skill"] = entry

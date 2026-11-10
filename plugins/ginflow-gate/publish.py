@@ -12,18 +12,15 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
-_CANDIDATES = (
-    Path(__file__).resolve().parents[2] / "core/ginflow-core/publish.py",
-    Path(__file__).resolve().parent / "lib/publish.py",
-)
-_SOURCE = next((path for path in _CANDIDATES if path.is_file()), None)
-if _SOURCE is None:
-    raise ImportError("unable to locate Ginflow publish core; checked: " + ", ".join(map(str, _CANDIDATES)))
-_spec = importlib.util.spec_from_file_location("ginflow_publish_core", _SOURCE)
-if not _spec or not _spec.loader:
-    raise ImportError(f"unable to load Ginflow publish core: {_SOURCE}")
-core = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(core)
+try:
+    from . import skill_lib
+except ImportError:
+    _skill_lib_spec = importlib.util.spec_from_file_location("ginflow_gate_skill_lib", Path(__file__).with_name("skill_lib.py"))
+    if not _skill_lib_spec or not _skill_lib_spec.loader:
+        raise ImportError("unable to load skill lib loader")
+    skill_lib = importlib.util.module_from_spec(_skill_lib_spec)
+    _skill_lib_spec.loader.exec_module(skill_lib)
+core = skill_lib.load("publish")
 
 _PENDING: dict[str, dict[str, Any]] = {}
 _AUTH_OK: set[tuple[str, str]] = set()

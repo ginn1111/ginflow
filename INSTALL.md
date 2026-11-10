@@ -63,7 +63,7 @@ make install                              # plugin into every Hermes profile
 make install PROFILES="profile-a profile-b"   # plugin into selected profiles only
 ```
 
-This copies `skills/ginflow`, including `lib/harness_core.py`, once to `~/.agents/skills/ginflow`, and copies `plugins/ginflow-gate` (bundling `core/ginflow-core/routing.py` as `lib/routing.py`), and `plugins/ginflow-trace` into `~/.hermes/profiles/<profile>/plugins/` for every profile that has a `config.yaml` (or only the profiles named in `PROFILES`). It does not modify profile config. Installer ownership is recorded in setup-repo-root `.ginflow-install.json`, which is gitignored.
+This copies `skills/ginflow`, including `lib/harness_core.py`, once to `~/.agents/skills/ginflow`, and copies `plugins/ginflow-gate` and `plugins/ginflow-trace` into `~/.hermes/profiles/<profile>/plugins/` for every profile that has a `config.yaml` (or only the profiles named in `PROFILES`). The gate loads every core module from `skills/ginflow/lib/` (repo checkout first, then `~/.agents/skills/ginflow/lib/`) via `plugins/ginflow-gate/skill_lib.py`. It does not modify profile config. Installer ownership is recorded in setup-repo-root `.ginflow-install.json`, which is gitignored.
 
 Remove only installer-owned files with:
 
@@ -152,7 +152,7 @@ make verify
 
 Use the repository directories directly or copy the required artifacts into another project or runtime:
 
-- `core/ginflow-core/` — reusable routing and validation primitives
+- `skills/ginflow/lib/` — reusable routing and validation primitives
 - `templates/` — target-project starter context and artifact templates
 - `skills/ginflow/` — optional Hermes-compatible workflow skill
 - `plugins/ginflow-gate/` — optional Hermes-compatible completion gate

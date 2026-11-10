@@ -14,7 +14,7 @@ Hermes is an agent runtime with profiles and a native Kanban board. Ginflow adds
 - **Four-phase lifecycle** that settles ambiguity before code is touched.
 - **Provider documents**: one canonical governance record per Work Unit (local Markdown, GitHub Issue, or Linear Issue); Kanban cards stay short and link to it.
 - **Completion gates** (`ginflow-gate`) check card fields, verification evidence, linked artifacts, baseline commits, and drift at native Hermes transitions.
-- **Reusable core** (`core/ginflow-core/`): routing and Execution Package primitives, independent of Hermes.
+- **Reusable core** (`skills/ginflow/lib/`): routing and Execution Package primitives, independent of Hermes.
 - **Optional tracing** (`ginflow-trace`), off by default.
 
 | Phase | Outcome |
@@ -70,7 +70,7 @@ More options and the evidence rules: [docs/guides/project-config.md](docs/guides
 | Path | Role |
 |---|---|
 | `skills/ginflow/` | Normative workflow contract and harness validator |
-| `core/ginflow-core/` | Routing and Execution Package primitives |
+| `skills/ginflow/lib/` | Harness, config, routing, publish, and Execution Package primitives |
 | `plugins/ginflow-gate/` | Hermes hooks: routing context and completion enforcement |
 | `plugins/ginflow-trace/` | Optional trace logging |
 | `templates/` | Starter target-project rules and artifact templates |

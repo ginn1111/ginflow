@@ -343,7 +343,7 @@ def main():
         # ---- 8. local-provider-document ----
         @report.record("local-provider-document")
         def local_provider_document():
-            core = str(ROOT / "core/ginflow-core")
+            core = str(ROOT / "skills/ginflow/lib")
             if core not in sys.path:
                 sys.path.insert(0, core)
             from provider_document import build_provider_document, write_local_document

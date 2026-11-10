@@ -2,7 +2,7 @@
 
 Read-only human review after Integration succeeds or blocks. Decision never completes an Initiative by itself.
 
-Terms: see `GLOSSARY.md` (Initiative, Execution Batch, Integration, Change Group, Decision, Review Cycle, Decision Projection, Notification, MR Intent). Code: `core/ginflow-core/{execution_batch,decision,review_cycle,merge_request}.py`.
+Terms: see `GLOSSARY.md` (Initiative, Execution Batch, Integration, Change Group, Decision, Review Cycle, Decision Projection, Notification, MR Intent). Code: `skills/ginflow/lib/{execution_batch,decision,review_cycle,merge_request}.py`.
 
 ## Agent steps
 
