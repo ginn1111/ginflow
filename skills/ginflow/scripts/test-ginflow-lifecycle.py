@@ -241,6 +241,8 @@ def main():
             assert gate_result["route"] == "ready_to_start", gate_result
             assert gate_result["valid"] is True
             assert gate_result["transition_required"] is True
+            worktree_card = {**card, "workspace": f"worktree:{target}"}
+            assert harness_core.startup_gate(worktree_card, target, target)["route"] == "ready_to_start"
             return "ready_to_start"
 
         # ---- 4. harness-validate ----

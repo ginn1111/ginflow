@@ -190,8 +190,9 @@ def startup_gate(card, target, current=None):
     current = Path(current or Path.cwd()).resolve()
     target = Path(target).resolve()
     workspace = str(card.get("workspace", ""))
-    if workspace.startswith("dir:"):
-        workspace = workspace[4:]
+    kind, sep, path = workspace.partition(":")
+    if sep and kind in {"dir", "worktree"}:
+        workspace = path
     try:
         card_workspace = Path(workspace).expanduser().resolve()
     except (OSError, TypeError, ValueError):

@@ -9,8 +9,8 @@ def workspace(task: dict[str, Any]) -> Path | None:
     value = task.get("workspace_path") or task.get("workspace")
     if not value:
         return None
-    if isinstance(value, str) and value.startswith("dir:"):
-        value = value[4:]
+    if isinstance(value, str) and value.partition(":")[0] in {"dir", "worktree"}:
+        value = value.partition(":")[2]
     try:
         return Path(value).expanduser().resolve()
     except (OSError, TypeError, ValueError):
