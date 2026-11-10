@@ -1,0 +1,4 @@
+name: ginflow-trace
+version: "0.1.0"
+description: Opt-in, non-blocking function tracing for Ginflow plugins
+hooks: []

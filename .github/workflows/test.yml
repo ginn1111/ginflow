@@ -1,0 +1,19 @@
+name: test
+on:
+  pull_request:
+  push:
+    branches: [main, develop]
+jobs:
+  make-test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        pyyaml: [without, with]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - if: matrix.pyyaml == 'with'
+        run: python3 -m pip install pyyaml
+      - run: make lint test

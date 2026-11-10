@@ -1,0 +1,5 @@
+version: 2
+
+secret:
+  ignored_paths:
+    - core/ginflow-core/test_decision.py

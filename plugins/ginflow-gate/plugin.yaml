@@ -1,0 +1,8 @@
+name: ginflow-gate
+version: "0.1.0"
+description: Route Ginflow work and block invalid Kanban lifecycle transitions
+hooks:
+  - pre_llm_call
+  - pre_tool_call
+  - post_tool_call
+  - kanban_task_blocked
