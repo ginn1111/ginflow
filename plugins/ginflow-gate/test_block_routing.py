@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Block routing test: kanban_task_blocked hook -> one `hermes send` (stub on PATH)."""
-import importlib.util
+import importlib
 import json
 import os
 import shutil
@@ -10,6 +10,7 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "plugins"))
 BOARD = "ginflow-block-routing"
 BODY = "Objective: x\nScope:\n- x\nAcceptance:\n- x\nLinks:\n- docs/specs/X-1.md"
 REAL_HERMES = shutil.which("hermes")
@@ -24,14 +25,7 @@ exec {REAL_HERMES} "$@"
 
 
 def load_plugin():
-    path = ROOT / "plugins/ginflow-gate/__init__.py"
-    spec = importlib.util.spec_from_file_location(
-        "ginflow_gate_block_pkg", path, submodule_search_locations=[str(path.parent)]
-    )
-    module = importlib.util.module_from_spec(spec)
-    sys.modules["ginflow_gate_block_pkg"] = module
-    spec.loader.exec_module(module)
-    return module
+    return importlib.import_module("ginflow-gate")
 
 
 class Ctx:
@@ -121,7 +115,7 @@ def main():
         before = len(calls)
         # dependency block: Hermes only waits in todo with an open parent, which cannot be
         # linked to a running child, so drive the hook with a dependency-kind task directly.
-        br = sys.modules["ginflow_gate_block_pkg.block_routing"]
+        br = importlib.import_module("ginflow-gate.block_routing")
         real_load = br._load_task
         br._load_task = lambda task_id, board: real_load(task_id, board) | {"block_kind": "dependency"}
         got = fire(tid, "r")

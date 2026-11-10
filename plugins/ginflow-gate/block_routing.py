@@ -6,7 +6,6 @@ native notify subscription, else (or on push failure) a card comment.
 """
 from __future__ import annotations
 
-import importlib.util
 import json
 import logging
 import os
@@ -21,14 +20,7 @@ _REPAIR_MARKER = "[ginflow] origin=worker"
 MAX_BODY = 800
 logger = logging.getLogger(__name__)
 
-try:
-    from . import skill_lib
-except ImportError:
-    _skill_lib_spec = importlib.util.spec_from_file_location("ginflow_gate_skill_lib", Path(__file__).with_name("skill_lib.py"))
-    if not _skill_lib_spec or not _skill_lib_spec.loader:
-        raise ImportError("unable to load skill lib loader")
-    skill_lib = importlib.util.module_from_spec(_skill_lib_spec)
-    _skill_lib_spec.loader.exec_module(skill_lib)
+from . import skill_lib
 _config = skill_lib.load("project_config")
 _core = skill_lib.load("harness_core")
 

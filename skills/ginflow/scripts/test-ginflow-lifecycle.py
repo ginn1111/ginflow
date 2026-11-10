@@ -167,7 +167,9 @@ def main():
     _syspath_insert()
     project_config = _load("lifecycle_project_config", ROOT / "skills/ginflow/lib/project_config.py")
     harness_core = _load("lifecycle_harness_core", ROOT / "skills/ginflow/lib/harness_core.py")
-    gate = _load("lifecycle_gate", ROOT / "plugins/ginflow-gate/gate.py")
+    if str(ROOT / "plugins") not in sys.path:
+        sys.path.insert(0, str(ROOT / "plugins"))
+    gate = importlib.import_module("ginflow-gate.gate")
 
     report = Report()
 

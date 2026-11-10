@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
 """Tests for the pure Ginflow feedback event contract."""
 
-import importlib.util
+import importlib
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-MODULE_PATH = ROOT / "plugins/ginflow-gate/feedback.py"
-spec = importlib.util.spec_from_file_location("ginflow_feedback", MODULE_PATH)
-assert spec and spec.loader
-module = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(module)
+sys.path.insert(0, str(ROOT / "plugins"))
+module = importlib.import_module("ginflow-gate.feedback")
 
 build_feedback_event = module.build_feedback_event
 

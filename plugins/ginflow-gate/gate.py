@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import importlib.util
 import os
 import subprocess
 from pathlib import Path
@@ -43,36 +42,11 @@ def _frontmatter_status_is_completed(text: str) -> bool:
     return _frontmatter_status(text) == "completed"
 
 
-try:
-    from .trace_adapter import trace
-except ImportError:
-    _trace_spec = importlib.util.spec_from_file_location(
-        "ginflow_gate_trace_adapter", Path(__file__).with_name("trace_adapter.py")
-    )
-    if not _trace_spec or not _trace_spec.loader:
-        raise ImportError("unable to load trace adapter")
-    _trace_module = importlib.util.module_from_spec(_trace_spec)
-    _trace_spec.loader.exec_module(_trace_module)
-    trace = _trace_module.trace
-
-try:
-    from . import publish as _publish
-except ImportError:
-    _publish_spec = importlib.util.spec_from_file_location("ginflow_gate_publish", Path(__file__).with_name("publish.py"))
-    if not _publish_spec or not _publish_spec.loader:
-        raise ImportError("unable to load publish adapter")
-    _publish = importlib.util.module_from_spec(_publish_spec)
-    _publish_spec.loader.exec_module(_publish)
+from .trace_adapter import trace
+from . import publish as _publish
+from . import skill_lib
 
 
-try:
-    from . import skill_lib
-except ImportError:
-    _skill_lib_spec = importlib.util.spec_from_file_location("ginflow_gate_skill_lib", Path(__file__).with_name("skill_lib.py"))
-    if not _skill_lib_spec or not _skill_lib_spec.loader:
-        raise ImportError("unable to load skill lib loader")
-    skill_lib = importlib.util.module_from_spec(_skill_lib_spec)
-    _skill_lib_spec.loader.exec_module(skill_lib)
 _core = skill_lib.load("harness_core")
 artifact_gate = _core.artifact_gate
 normalize_card = _core.normalize_card

@@ -1,21 +1,15 @@
 #!/usr/bin/env python3
 """Focused bounded recovery policy tests."""
 from copy import deepcopy
-import importlib.util
+import importlib
 import sys
 from pathlib import Path
 
-PLUGIN_DIR = Path(__file__).parent
-sys.path.insert(0, str(PLUGIN_DIR))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 
 def load(name: str):
-    spec = importlib.util.spec_from_file_location(name, PLUGIN_DIR / f"{name}.py")
-    assert spec and spec.loader
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = module
-    spec.loader.exec_module(module)
-    return module
+    return importlib.import_module(f"ginflow-gate.{name}")
 
 
 reporting = load("blocker_reporting")
