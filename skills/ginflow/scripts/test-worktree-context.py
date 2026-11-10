@@ -28,7 +28,8 @@ def main():
 
     assert pc.context_error(main_tree) is None
     assert pc.context_error(worktree) is None, pc.context_error(worktree)
-    assert pc.resolve_board(worktree) == "b"
+    # Empty env: Kanban workers export HERMES_KANBAN_BOARD, which outranks project config.
+    assert pc.resolve_board(worktree, env={}) == "b"
     # A different repository naming this workspace is still a mismatch.
     assert "does not match" in (pc.context_error(other) or "")
     # A plain directory (no git) is still a mismatch.
