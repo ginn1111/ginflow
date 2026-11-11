@@ -134,10 +134,13 @@ if [[ "$(id -u)" != "0" ]]; then
   [[ "$(cat "$A/plugins/ginflow-trace/prior.txt")" == "prior-plugin" ]]
   [[ ! -e "$SKILL/SKILL.md" && ! -e "$A/plugins/ginflow-trace/plugin.yaml" ]]
   [[ ! -e "$PROFILES/beta/plugins/ginflow-trace" ]]
-  [[ -z "$(find "$HOME_ROOT" -name '*.bak.ginflow-install')" ]]
+  [[ -z "$(find "$HOME_ROOT" -path '*/.ginflow-install-backups/*' -mindepth 1)" ]]
 
   bash "$ROOT/scripts/install.sh" install alpha >/dev/null
   [[ -f "$A/plugins/ginflow-trace/plugin.yaml" ]]
+  # Backup of the prior plugin lives outside plugins/, so Hermes never loads it as a second plugin.
+  [[ -f "$A/.ginflow-install-backups/ginflow-trace/prior.txt" ]]
+  [[ -z "$(find "$A/plugins" -mindepth 2 -maxdepth 2 -name plugin.yaml -not -path '*/ginflow-gate/*' -not -path '*/ginflow-trace/*')" ]]
   printf 'local edit\n' > "$A/plugins/ginflow-trace/extra.txt"
   if bash "$ROOT/scripts/install.sh" uninstall >/dev/null 2>&1; then
     echo "expected uninstall conflict" >&2
