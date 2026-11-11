@@ -20,7 +20,11 @@ case "$(basename "$0") $1 $2" in
   "gh auth status"|"glab auth status") exit "${FAKE_AUTH:-0}" ;;
   "gh pr list"|"glab mr list") echo "${FAKE_EXISTING:-[]}" ;;
   "gh pr create"|"glab mr create") [ -n "$FAKE_CREATE_FAIL" ] && { echo boom >&2; exit 1; }; echo "https://example.test/mr/1" ;;
-  "hermes kanban "*) case "$*" in *" show "*) echo "{\"task\": {\"branch_name\": \"$FAKE_BRANCH\"}}" ;; esac ;;
+  "gh pr view") echo "${FAKE_PR_STATE:-MERGED}" ;;
+  "hermes kanban "*) case "$*" in
+    *" show t_p1 "*) echo "{\"task\": {\"branch_name\": \"$FAKE_BRANCH\"}, \"parents\": [${FAKE_PARENTS}]}" ;;
+    *" show "*) echo "{\"task\": {\"branch_name\": \"wt/x\"}, \"comments\": [{\"body\": \"ginflow-publish: https://example.test/pr/7\"}]}" ;;
+  esac ;;
 esac
 '''
 
@@ -105,6 +109,28 @@ with tempfile.TemporaryDirectory() as tmp:
     assert "gh pr create -H wt/p-1 -B main -t P-1 — publish" in seen, seen
     assert "comment t_p1 ginflow-publish: https://example.test/mr/1" in seen, seen
     assert "t_p1" not in pub._PENDING
+
+    # stacking: one open parent PR -> base is the parent branch; two parents -> target + Merge after
+    os.environ["FAKE_PR_STATE"] = "OPEN"
+    os.environ["FAKE_PARENTS"] = '"t_a"'
+    gate.pre_tool_call("kanban_complete", args)
+    calls()
+    gate.post_tool_call("kanban_complete", json.dumps({"ok": True}), args)
+    seen = calls()
+    assert "gh pr create -H wt/p-1 -B wt/x " in seen, seen
+    os.environ["FAKE_PARENTS"] = '"t_a", "t_b"'
+    gate.pre_tool_call("kanban_complete", args)
+    calls()
+    gate.post_tool_call("kanban_complete", json.dumps({"ok": True}), args)
+    seen = calls()
+    assert "-B main " in seen and "Merge after: https://example.test/pr/7, https://example.test/pr/7" in seen, seen
+    os.environ["FAKE_PR_STATE"] = "MERGED"  # parent PR merged -> plain target, no Merge after
+    gate.pre_tool_call("kanban_complete", args)
+    calls()
+    gate.post_tool_call("kanban_complete", json.dumps({"ok": True}), args)
+    seen = calls()
+    assert "-B main " in seen and "Merge after" not in seen, seen
+    os.environ["FAKE_PARENTS"] = ""
 
     # existing PR reused, create skipped
     os.environ["FAKE_EXISTING"] = '[{"url": "https://example.test/mr/9"}]'

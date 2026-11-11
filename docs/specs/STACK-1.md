@@ -1,5 +1,5 @@
 ---
-status: draft
+status: completed
 card: STACK-1
 assignee: ginb
 blocked_by: [PRUNE-1]

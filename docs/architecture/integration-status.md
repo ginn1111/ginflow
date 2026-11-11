@@ -6,7 +6,7 @@ owner: ginb
 
 # Integration status — plugins and core
 
-Wired = reached from a Hermes hook (`pre_llm_call`, `pre_tool_call`, `post_tool_call`, `kanban_task_blocked`), plugin load, or the harness CLI (`validate-harness.py`); the wired cell names the path. Doc = named in `skills/ginflow/SKILL.md` or its references. Tested = named in a test run by `make test`. Public = top-level function without a leading underscore (plus `_routing_context`, the `pre_llm_call` hook). Wired cells follow call-graph reading of hook registrations; Doc and Tested cells are word-grep matches, so generic names (`check`, `has`) can over-report.
+Wired = reached from a Hermes hook (`pre_llm_call`, `pre_tool_call`, `post_tool_call`, `kanban_task_blocked`, `kanban_task_completed`), plugin load, or the harness CLI (`validate-harness.py`); the wired cell names the path. Doc = named in `skills/ginflow/SKILL.md` or its references. Tested = named in a test run by `make test`. Public = top-level function without a leading underscore (plus `_routing_context`, the `pre_llm_call` hook). Wired cells follow call-graph reading of hook registrations; Doc and Tested cells are word-grep matches, so generic names (`check`, `has`) can over-report.
 
 Regenerate evidence: `grep -rnw <name> plugins skills/ginflow scripts --include=*.py | grep -v test` for callers; `grep -rnw <name> plugins skills/ginflow scripts --include='test*.py'` for tests; `grep -rnw <name> skills/ginflow --include=*.md` for docs.
 
@@ -31,11 +31,15 @@ Regenerate evidence: `grep -rnw <name> plugins skills/ginflow scripts --include=
 | publish.py | `active_profile` | [x] pre_tool_call | [ ] | [ ] |
 | publish.py | `auth_error` | [x] pre_llm_call | [ ] | [ ] |
 | publish.py | `prepare` | [x] pre_tool_call | [ ] | [ ] |
+| publish.py | `base_and_body` | [x] pre_tool_call | [x] | [x] |
 | publish.py | `publish` | [x] post_tool_call | [x] | [x] |
 | publish.py | `finish` | [x] post_tool_call | [x] | [ ] |
 | recovery_policy.py | `evaluate_recovery` | [x] kanban_task_blocked | [ ] | [x] |
 | routing.py | `register` | [x] plugin load | [ ] | [x] |
 | routing.py | `_routing_context` | [x] pre_llm_call | [ ] | [x] |
+| stacking.py | `on_task_completed` | [x] kanban_task_completed | [x] | [x] |
+| stacking.py | `stack_child` | [x] kanban_task_completed | [x] | [x] |
+| stacking.py | `register` | [x] plugin load | [ ] | [x] |
 | skill_lib.py | `load` | [x] import time | [x] | [x] |
 | trace_adapter.py | _(no public function)_ | - | - | - |
 
