@@ -92,3 +92,16 @@ A child card does not wait for its parent's PR merge. `ginflow-gate` (`kanban_ta
 - parent without a worktree (`dir:`): skipped. Hook is observer-only; failures are logged.
 
 Publish: exactly one parent with an open PR (`ginflow-publish: <url>` comment, `gh pr view` state `OPEN`) opens the child PR with `--base <parent branch>`. Several parents: base is the configured target and the body lists open parent PRs as `Merge after: <urls>`. Merged or absent parent PR: configured target.
+
+## PR feedback
+
+`ginflow pr sync [--board B] [--project P]` (run by hand or cron; Hermes has no PR event hook) turns PR review feedback into a follow-up card on the same branch:
+
+- candidates: `done` cards with a `ginflow-publish: <url>` comment and no `[ginflow-pr] merged|closed` comment. GitHub only; GitLab URLs print `skip <url>: provider gitlab not supported yet`.
+- new items = review bodies (incl. `CHANGES_REQUESTED`), issue comments and inline comments newer than the latest `[ginflow-pr] synced=<iso>` comment (default: card `completed_at`). Bodies starting with `[ginflow]` are ignored: Gin and ginflow share one GitHub account, so that prefix is the only author filter.
+- no open feedback card for the PR: create `<KEY>-fb<N> — PR #<n> feedback` on the PR head branch (`--branch`), assignee = parent assignee, Scope/Links copied from the parent, one Acceptance line per comment plus `make lint test` passes; linked parent → fb; unblocked to `ready`. A clean stale worktree holding the branch is removed first; a dirty one leaves the card `blocked needs_input`.
+- open feedback card exists: items are appended there as a `[ginflow-pr] new feedback:` comment.
+- parent gets `[ginflow-pr] synced=<now> items=<n>` whenever items were found. Merged/closed PR: parent gets `[ginflow-pr] merged|closed` and is no longer synced.
+- one `gh` failure is reported (`fail <id>: ...`), the rest continue, exit 1.
+
+Publish on a branch with an open PR pushes, comments `[ginflow] updated <sha> by <KEY>` on the PR and `ginflow-publish: <url> (updated)` on the card; no second PR.

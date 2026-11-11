@@ -54,6 +54,7 @@ lifecycle-test:
 	python3 skills/ginflow/scripts/test-project-reviewer.py
 	python3 skills/ginflow/scripts/test-worktree-context.py
 	python3 skills/ginflow/scripts/test-ginflow-init.py
+	python3 skills/ginflow/scripts/test-ginflow-pr-sync.py
 
 install-test:
 	bash scripts/test-install.sh

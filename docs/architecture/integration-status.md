@@ -32,7 +32,7 @@ Regenerate evidence: `grep -rnw <name> plugins skills/ginflow scripts --include=
 | publish.py | `auth_error` | [x] pre_llm_call | [ ] | [ ] |
 | publish.py | `prepare` | [x] pre_tool_call | [ ] | [ ] |
 | publish.py | `base_and_body` | [x] pre_tool_call | [x] | [x] |
-| publish.py | `publish` | [x] post_tool_call | [x] | [x] |
+| publish.py | `publish` | [x] post_tool_call | [x] | [x] | 
 | publish.py | `finish` | [x] post_tool_call | [x] | [ ] |
 | recovery_policy.py | `evaluate_recovery` | [x] kanban_task_blocked | [ ] | [x] |
 | routing.py | `register` | [x] plugin load | [ ] | [x] |
@@ -104,4 +104,5 @@ Regenerate evidence: `grep -rnw <name> plugins skills/ginflow scripts --include=
 
 - Wired: routing context, block guard, block routing with recovery policy and feedback (`blocker_reporting`, `recovery_policy`, `feedback`), completion gate, publish, trace, core harness/routing/publish primitives, config readers (board, context, reviewer, publish, notify).
 - Wired via `ginflow init` (`skills/ginflow/scripts/ginflow.py`, tested by `test-ginflow-init.py`): `initialize_context`, `persist_context`, `persist_worker_defaults`, `persist_reviewer`, `configured_worker`, `worker_error`, `resolve_worker_dispatch`, `hermes_default_reviewer`, `seed_default_reviewer`.
+- Wired via `ginflow pr sync` (`skills/ginflow/scripts/ginflow.py`, tested by `test-ginflow-pr-sync.py`): PR feedback becomes a follow-up card (PRFB-1). `publish.publish` also comments `[ginflow] updated <sha> by <KEY>` on an existing PR (tested by `test_publish_hook.py`).
 - Every plugin test file runs under `make test` (`test_native_review_transition.py`, `test_block_routing.py` and the trace integration test skip when the `hermes` CLI is missing).

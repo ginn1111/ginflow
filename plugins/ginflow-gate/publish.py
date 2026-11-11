@@ -62,7 +62,7 @@ def _body(card: dict, metadata: dict) -> str:
     return "\n".join(lines)
 
 
-_PUBLISHED = re.compile(r"^ginflow-publish: (https?://\S+)$")
+_PUBLISHED = re.compile(r"^ginflow-publish: (https?://\S+)(?: \(updated\))?$")
 
 
 def _open_parent_prs(parents: list[str], board: str | None, config: dict[str, Any], cwd: Path) -> list[tuple[str, str]]:
