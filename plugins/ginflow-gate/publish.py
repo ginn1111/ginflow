@@ -150,6 +150,10 @@ def publish(job: dict[str, Any]) -> tuple[str | None, str | None]:
     existing = _run(core.build_existing_argv(config["provider"], job["branch"]), cwd=cwd)
     url = core.parse_existing_url(config["provider"], existing.stdout) if not existing.returncode else None
     if url:
+        job["updated"] = True
+        if config["provider"] == "github":  # best effort; the push already landed
+            key = job["title"].split(" — ")[0].strip()
+            _run(["gh", "pr", "comment", url, "--body", f"[ginflow] updated {job['commit'][:7]} by {key}"], cwd=cwd, timeout=30)
         return url, None
     argv = core.build_create_argv(config["provider"], job["branch"], job["base"], job["title"], job["body"], config["draft"])
     result = _run(argv, cwd=cwd)
@@ -172,7 +176,7 @@ def finish(task_id: str, result: Any, kwargs: dict) -> None:
     except Exception as exc:  # observer: never break the completed transition
         url, error = None, f"unexpected error: {exc}"
     try:
-        _comment(task_id, job["board"], f"ginflow-publish: {url}" if url else f"ginflow-publish failed: {error}")
+        _comment(task_id, job["board"], f"ginflow-publish: {url}" + (" (updated)" if job.get("updated") else "") if url else f"ginflow-publish failed: {error}")
     except Exception:
         pass
 

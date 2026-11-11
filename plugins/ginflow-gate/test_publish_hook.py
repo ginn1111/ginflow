@@ -137,7 +137,8 @@ with tempfile.TemporaryDirectory() as tmp:
     gate.pre_tool_call("kanban_complete", args)
     gate.post_tool_call("kanban_complete", json.dumps({"ok": True}), args)
     seen = calls()
-    assert "pr create" not in seen and "ginflow-publish: https://example.test/mr/9" in seen, seen
+    assert "pr create" not in seen and "ginflow-publish: https://example.test/mr/9 (updated)" in seen, seen
+    assert f"gh pr comment https://example.test/mr/9 --body [ginflow] updated {commit[:7]} by P-1" in seen, seen
     del os.environ["FAKE_EXISTING"]
 
     # failed tool result: no publish
