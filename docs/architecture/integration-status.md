@@ -55,6 +55,10 @@ Regenerate evidence: `grep -rnw <name> plugins skills/ginflow scripts --include=
 | --- | --- | --- | --- | --- |
 | harness_core.py | `check` | [x] harness CLI / gate / routing | [x] | [x] |
 | harness_core.py | `has` | [x] harness CLI / gate / routing | [x] | [x] |
+| spec_cards.py | `front_matter` | [x] ginflow cards create | [x] | [x] |
+| spec_cards.py | `section` | [x] ginflow cards create | [ ] | [x] |
+| spec_cards.py | `load_spec` | [x] ginflow cards create | [x] | [x] |
+| spec_cards.py | `order` | [x] ginflow cards create | [x] | [x] |
 | harness_core.py | `parse_card_body` | [x] harness CLI / gate / routing | [ ] | [x] |
 | harness_core.py | `normalize_card` | [x] harness CLI / gate / routing | [ ] | [x] |
 | harness_core.py | `kanban_argv` | [x] harness CLI / gate / routing | [ ] | [ ] |
@@ -100,4 +104,5 @@ Regenerate evidence: `grep -rnw <name> plugins skills/ginflow scripts --include=
 
 - Wired: routing context, block guard, block routing with recovery policy and feedback (`blocker_reporting`, `recovery_policy`, `feedback`), completion gate, publish, trace, core harness/routing/publish primitives, config readers (board, context, reviewer, publish, notify).
 - Wired via `ginflow init` (`skills/ginflow/scripts/ginflow.py`, tested by `test-ginflow-init.py`): `initialize_context`, `persist_context`, `persist_worker_defaults`, `persist_reviewer`, `configured_worker`, `worker_error`, `resolve_worker_dispatch`, `hermes_default_reviewer`, `seed_default_reviewer`.
+- Wired via `ginflow cards create` (`skills/ginflow/scripts/ginflow.py`, tested by `test-ginflow-cards.py` and the `spec_cards.py` self-check): `front_matter`, `section`, `load_spec`, `order`.
 - Every plugin test file runs under `make test` (`test_native_review_transition.py`, `test_block_routing.py` and the trace integration test skip when the `hermes` CLI is missing).

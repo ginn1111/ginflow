@@ -34,7 +34,9 @@ Use a stable human-facing card key chosen before creation for linked artifacts; 
 
 Put the key in the task title and explicit `Links:` paths. The harness follows those links rather than deriving filenames from the generated task ID.
 
-Draft card and artifact content before writing. Create the card assigned to the current profile, with its future links and `--initial-status blocked`. Write linked artifacts, then unblock once readiness passes. Current profile loads its canonical local Ginflow skill; do not force `--skill ginflow`.
+Prefer `ginflow cards create [--board B] SPEC...`: it reads `card`, `assignee`, `blocked_by` from spec front matter, builds the body labels above from the spec, creates cards blocked with `--workspace worktree`, adds `hermes kanban link` edges, runs the harness candidate check, unblocks passing cards (children of unfinished parents stay `todo`), and reuses cards already on the board. Needs board `default_workdir` (`ginflow init`).
+
+Manual path: draft card and artifact content before writing. Create the card assigned to the current profile, with its future links and `--initial-status blocked`. Write linked artifacts, then unblock once readiness passes. Current profile loads its canonical local Ginflow skill; do not force `--skill ginflow`.
 
 For a malformed existing body, keep the task blocked and have the human edit title/body in the Kanban dashboard before rerunning the harness. `hermes kanban edit` is only for completed-task recovery fields, not body edits. Do not invent a CLI `--body` repair command or acceptance criteria. If dashboard repair is unavailable, replacing the card requires human approval and an explicit backlink/comment.
 

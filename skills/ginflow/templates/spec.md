@@ -1,5 +1,8 @@
 ---
 status: draft
+card:           # stable key, e.g. APP-9
+assignee:       # installed Hermes profile
+blocked_by: []  # card keys, e.g. [APP-8]
 scope:
 owner:
 ---
