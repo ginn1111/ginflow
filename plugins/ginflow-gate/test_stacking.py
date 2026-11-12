@@ -3,6 +3,7 @@
 import importlib
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -29,6 +30,9 @@ def run(cmd, cwd=None, check=True):
 
 
 def main():
+    if not shutil.which("hermes"):
+        print("SKIP: stacking hook (hermes CLI not installed)")
+        return
     ctx = Ctx()
     importlib.import_module("ginflow-gate").register(ctx)
     hook = ctx.hooks["kanban_task_completed"]
