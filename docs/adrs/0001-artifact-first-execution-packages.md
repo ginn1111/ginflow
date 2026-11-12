@@ -1,3 +1,10 @@
+---
+status: superseded
+superseded_by: 0002
+---
+
+Superseded by ADR 0002 (spec-first cards).
+
 # ADR 0001: Artifact-first execution packages
 
 ## Decision

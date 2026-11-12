@@ -44,17 +44,7 @@ lint:
 test: lint core-test lifecycle-test plugin-test install-test
 
 core-test:
-	python3 skills/ginflow/lib/test_execution_package.py
-	python3 skills/ginflow/lib/test_card_creation.py
-	python3 skills/ginflow/lib/test_provider_document.py
-	python3 skills/ginflow/lib/test_initiative.py
-	python3 skills/ginflow/lib/test_execution_batch.py
-	python3 skills/ginflow/lib/test_decision.py
-	python3 skills/ginflow/lib/test_review_cycle.py
-	python3 skills/ginflow/lib/test_followup.py
-	python3 skills/ginflow/lib/test_merge_request.py
 	python3 skills/ginflow/lib/test_publish.py
-	python3 skills/ginflow/lib/test_initiative_workflow.py
 
 # ponytail: keep lib tests as direct scripts until shared repository test runner exists.
 
@@ -62,7 +52,6 @@ core-test:
 lifecycle-test:
 	python3 skills/ginflow/scripts/test-ginflow-lifecycle.py
 	python3 skills/ginflow/scripts/test-project-reviewer.py
-	python3 skills/ginflow/scripts/test-document-config.py
 	python3 skills/ginflow/scripts/test-worktree-context.py
 
 install-test:
@@ -70,7 +59,6 @@ install-test:
 
 plugin-test:
 	python3 plugins/ginflow-gate/test_ginflow_gate.py
-	python3 plugins/ginflow-gate/test_document_baseline.py
 	python3 plugins/ginflow-gate/test_blocker_reporting.py
 	python3 plugins/ginflow-gate/test_recovery_policy.py
 	python3 plugins/ginflow-gate/test_feedback.py

@@ -11,18 +11,18 @@ Hermes is an agent runtime with profiles and a native Kanban board. Ginflow adds
 
 ## Features
 
-- **Four-phase lifecycle** that settles ambiguity before code is touched.
-- **Provider documents**: one canonical governance record per Work Unit (local Markdown, GitHub Issue, or Linear Issue); Kanban cards stay short and link to it.
+- **Spec-first flow** that settles ambiguity before code is touched.
+- **Spec + plan per card** (`docs/specs`, `docs/plans`); Kanban cards stay short and link to them.
 - **Completion gates** (`ginflow-gate`) check card fields, verification evidence, linked artifacts, baseline commits, and drift at native Hermes transitions.
-- **Reusable core** (`skills/ginflow/lib/`): routing and Execution Package primitives, independent of Hermes.
+- **Reusable core** (`skills/ginflow/lib/`): routing and publish primitives, independent of Hermes.
 - **Optional tracing** (`ginflow-trace`), off by default.
 
-| Phase | Outcome |
+| Step | Outcome |
 |---|---|
-| Discovery | Read-only problem framing: outcome, constraints, non-goals |
-| Shaping | One approved, artifact-first Execution Package |
-| Execution | Isolated Work Units run as Kanban cards, then an Integration card |
-| Decision | Human disposition from exact evidence; only `approved_for_mr` completes the lifecycle |
+| Shape | `docs/specs/<KEY>.md` + `docs/plans/<KEY>.md` |
+| Cards | Blocked Kanban cards linking the artifacts |
+| Execute | Worker implements in card scope, runs canonical verification |
+| Review | `kanban_request_review` then reviewer `kanban_complete`; gate auto-publishes the PR |
 
 Hermes stays the authority for cards, assignments, and lifecycle state. Target repositories keep their own code, rules, and canonical verification.
 
@@ -50,7 +50,7 @@ cp ~/.ginflow/templates/hermes.md .hermes.md
 echo .hermes.md >> .git/info/exclude
 ```
 
-Set the project's canonical verification command in `.hermes.md`, open Hermes there, and run `/ginflow`. It creates `.ginflow.yaml` and walks Discovery → Shaping → Execution → Decision. Workers finish with `kanban_request_review`; `ginflow-gate` validates evidence there and at `kanban_complete`.
+Set the project's canonical verification command in `.hermes.md`, open Hermes there, and run `/ginflow`. It creates `.ginflow.yaml` and walks shape → cards → execute → review → PR. Workers finish with `kanban_request_review`; `ginflow-gate` validates evidence there and at `kanban_complete`.
 
 Minimal `.ginflow.yaml` (written for you; shown for reference):
 
@@ -69,7 +69,7 @@ More options and the evidence rules: [docs/guides/project-config.md](docs/guides
 | Path | Role |
 |---|---|
 | `skills/ginflow/` | Normative workflow contract and harness validator |
-| `skills/ginflow/lib/` | Harness, config, routing, publish, and Execution Package primitives |
+| `skills/ginflow/lib/` | Harness, config, routing, and publish primitives |
 | `plugins/ginflow-gate/` | Hermes hooks: routing context and completion enforcement |
 | `plugins/ginflow-trace/` | Optional trace logging |
 | `templates/` | Starter target-project rules and artifact templates |
@@ -77,7 +77,6 @@ More options and the evidence rules: [docs/guides/project-config.md](docs/guides
 
 ## Not yet supported
 
-- TUI for Decision review
 - Gateway notification transport and subscriptions
 - Provider-specific merge request publication
 

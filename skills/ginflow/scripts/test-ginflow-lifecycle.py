@@ -349,38 +349,6 @@ def main():
             finally:
                 card_path.write_text(prior)
 
-        # ---- 8. local-provider-document ----
-        @report.record("local-provider-document")
-        def local_provider_document():
-            core = str(ROOT / "skills/ginflow/lib")
-            if core not in sys.path:
-                sys.path.insert(0, core)
-            from provider_document import build_provider_document, write_local_document
-            package = {
-                "key": "LIFE-DOC", "objective": "local doc", "scope": ["core"], "acceptance": ["ok"],
-                "contract": "c", "spec": "s", "plan": ["p"], "verification": ["make check"],
-            }
-            doc = build_provider_document("local", package, {})
-            assert write_local_document(doc, target)["status"] == "written"
-            assert write_local_document(doc, target)["status"] == "adopted"
-            path = doc["target_hints"]["path"]
-            git(target, "add", path)
-            git(target, "commit", "-qm", "work unit document")
-            commit = git(target, "rev-parse", "HEAD")
-            card = {"id": "LIFE-DOC", "title": "t", "objective": "o", "scope": ["s"], "acceptance": ["a"],
-                    "workspace": f"dir:{target}", "assignee": "worker", "links": [path]}
-            metadata = {
-                "verification_result": {"commit": commit, "command": "make check", "result": "passed"},
-                "artifact_baseline": {"commit": commit, "paths": [path]},
-                "document_baseline": {"content_hash": doc["content_hash"], "commit": commit},
-            }
-            assert gate.validate_completion(card, metadata) is None
-            missing = {k: v for k, v in metadata.items() if k != "document_baseline"}
-            assert "document_baseline" in gate.validate_completion(card, missing)
-            bad = metadata | {"document_baseline": {"content_hash": "0" * 64, "commit": commit}}
-            assert "does not match" in gate.validate_completion(card, bad)
-            return "write/adopt; matching baseline allowed; missing/drifted blocked"
-
     ok = report.passed()
     rendered = report.render()
     if args.json:

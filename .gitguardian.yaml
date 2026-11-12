@@ -1,5 +1,2 @@
 version: 2
 
-secret:
-  ignored_paths:
-    - skills/ginflow/lib/test_decision.py

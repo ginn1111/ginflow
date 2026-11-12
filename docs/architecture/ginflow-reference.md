@@ -6,7 +6,7 @@ This document is an evidence-based companion to the editable Draw.io diagrams. I
 
 Ginflow is a setup/integration repository for Hermes Agent work governance. It is not a product application and it does not own target-project business logic. Its purpose is to make ambiguous, risky, or multi-step work explicit enough to route, execute, verify, and complete without silently bypassing scope or evidence boundaries.
 
-The repository addresses a recurring failure mode: a raw prompt does not by itself establish the target workspace, requirements, root cause, risk, canonical verification, or completion authority. New governed/autonomous work uses Discovery, Shaping, Execution, and Decision around Hermes.
+The repository addresses a recurring failure mode: a raw prompt does not by itself establish the target workspace, requirements, root cause, risk, canonical verification, or completion authority. New work uses the spec-first flow (shape, cards, execute, review, PR) around Hermes.
 
 ## Runtime and ownership map
 
@@ -18,8 +18,8 @@ The repository addresses a recurring failure mode: a raw prompt does not by itse
 | `ginflow-gate` plugin | Hooks: `pre_llm_call` routing context; `pre_tool_call` block guard + completion gate + publish prepare; `post_tool_call` publish finish; `kanban_task_blocked` block routing. Feedback/recovery helpers exist but are not wired | `plugins/ginflow-gate/plugin.yaml`, `plugins/ginflow-gate/*.py` | Gate/context provider; not a semantic classifier or replacement runtime |
 | `ginflow-trace` plugin | Opt-in function tracing for gate/routing calls | `plugins/ginflow-trace/` | No hooks; loaded through ginflow-gate `trace_adapter` |
 | Core loader | Single lookup of `skills/ginflow/lib` (repo, then `~/.agents/skills/ginflow/lib`) | `plugins/ginflow-gate/skill_lib.py` | Only place plugins resolve core modules |
-| Kanban card | Durable governed-work assignment: objective, scope, acceptance, workspace, assignee, status, concise link to the provider document, progress | `skills/ginflow/SKILL.md`; `plugins/ginflow-gate/` | Hermes Kanban is lifecycle authority |
-| Provider document | One canonical governance record per Work Unit (`local`, `github`, or `linear`) with provider-neutral reference and `document_baseline` | `docs/adrs/0001-artifact-first-execution-packages.md`, `GLOSSARY.md` | Content authority; adapters hold credentials, the gate validates evidence only |
+| Kanban card | Durable governed-work assignment: objective, scope, acceptance, workspace, assignee, status, concise link to its spec and plan, progress | `skills/ginflow/SKILL.md`; `plugins/ginflow-gate/` | Hermes Kanban is lifecycle authority |
+| Spec and plan | `docs/specs/<KEY>.md` and `docs/plans/<KEY>.md` per card | `docs/adrs/0002-spec-first-cards.md`, `GLOSSARY.md` | Content authority; the gate validates `artifact_baseline` evidence only |
 | Target project | Product code, local rules, tests, and canonical verification | `AGENTS.md` contract; `skills/ginflow/SKILL.md` | Target repository owns product delivery |
 | Setup verification | Shared repository lint/test and integration health | `Makefile`, `skills/ginflow/scripts/validate-harness.py` | Proves setup/integration health, not target product behavior |
 | Target verification | Product-native command selected by target repository | `skills/ginflow/SKILL.md` completion rules | Required evidence for the target change |
@@ -27,8 +27,8 @@ The repository addresses a recurring failure mode: a raw prompt does not by itse
 ## Current user flow
 
 1. **Startup** — confirm the real target workspace and read local `AGENTS.md`/`.hermes.md`.
-2. **New Initiative** — Discovery captures problem and boundaries; Shaping approves one artifact-first package; Execution authorizes isolated immutable batches and blocked cards; Integration opens read-only Decision.
-3. **Decision and completion** — human review consumes exact evidence, routes follow-up to Execution/Shaping/Discovery, and only `approved_for_mr` yields provider-neutral MR intent. Hermes Kanban remains lifecycle authority.
+2. **New work** — shape one spec and plan per card; create blocked cards linking them.
+3. **PR and feedback** — reviewer completion auto-publishes the PR; PR feedback becomes new cards. Hermes Kanban remains lifecycle authority.
 4. **Execution and verification** — workers change only selected workspaces and run target canonical checks. Setup checks remain separate evidence.
 5. **Review and completion** — workers submit governed work with native `kanban_request_review` after canonical verification and linked-artifact finalization. Hermes Kanban owns review-state transitions and reviewer rework; `ginflow-gate` validates evidence, baseline, and drift at native transitions.
 
@@ -68,10 +68,10 @@ No committed `pyproject.toml`, `package.json`, `go.mod`, `Cargo.toml`, or requir
 
 ## Problems addressed
 
-- **Ambiguous intent:** Discovery resolves problem, boundaries, and open questions rather than inventing requirements.
-- **Wrong execution shape:** Shaping approves one artifact-first package before immutable batch authorization.
+- **Ambiguous intent:** shaping resolves problem, boundaries, and open questions rather than inventing requirements.
+- **Wrong execution shape:** shaping approves spec and plan before cards unblock.
 - **Workspace collisions:** require isolated workspaces and one active governed card per mutable workspace.
-- **Premature execution:** require approved Shaping artifacts, immutable batch authorization, and fail closed on missing fields.
+- **Premature execution:** require approved spec/plan and fail closed on missing card fields.
 - **Weak completion claims:** require canonical verification and native completion-gate validation.
 - **Artifact drift:** compare linked artifacts against a completion baseline and reject drift.
 - **Boundary confusion:** keep Hermes, Ginflow core, plugin, skill, and target-project ownership distinct.
@@ -92,7 +92,7 @@ No committed `pyproject.toml`, `package.json`, `go.mod`, `Cargo.toml`, or requir
 
 ### Pros
 
-- Clear separation between Discovery, Shaping, Execution, and Decision.
+- Clear separation between shaping, execution, and review.
 - Evidence-oriented Kanban completion rather than chat-only status.
 - Reusable workflow guidance across target repositories.
 - Explicit ownership boundaries reduce accidental runtime/profile changes.
@@ -101,7 +101,7 @@ No committed `pyproject.toml`, `package.json`, `go.mod`, `Cargo.toml`, or requir
 
 ### Cons and trade-offs
 
-- The workflow adds ceremony (Shaping, approved package, blocked cards) even for small changes.
+- The workflow adds ceremony (spec, plan, blocked cards) even for small changes.
 - Users must understand both Hermes-native Kanban states and Ginflow logical states.
 - Documentation and diagrams are distributed across skill, plugin, core, and target-project boundaries.
 - The setup repository cannot guarantee target-project behavior; two verification commands may be necessary.

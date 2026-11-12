@@ -112,7 +112,8 @@ def test_project_config_routes_fail_closed():
                 finally:
                     module._load_tasks = old_loader
                 assert "route=no_cards_for_workspace" in no_cards["context"]
-                assert "Discovery → Shaping → Execution → Decision" in no_cards["context"]
+                assert "docs/specs/<KEY>.md" in no_cards["context"] and "docs/plans/<KEY>.md" in no_cards["context"]
+                assert "Discovery" not in no_cards["context"]
                 assert "legacy" not in no_cards["context"].lower()
         finally:
             os.chdir(old_cwd)
@@ -146,8 +147,9 @@ def test_ginflow_skill_active():
             "Run `/ginflow` to initialize", "Repair `.ginflow.yaml`",
         )), "context should provide route action"
         if "no_cards_for_workspace" in result["context"]:
-            assert "initiative" in result["context"]
-            assert "Discovery → Shaping → Execution → Decision" in result["context"]
+            assert "docs/specs/<KEY>.md" in result["context"]
+            assert "docs/plans/<KEY>.md" in result["context"]
+            assert "Discovery" not in result["context"]
             assert "Choose work mode" not in result["context"]
             assert "legacy" not in result["context"].lower()
             assert "mutation_allowed=False" in result["context"]

@@ -53,18 +53,6 @@ Regenerate evidence: `grep -rnw <name> plugins skills/ginflow scripts --include=
 
 | Module | Function | Wired | Doc | Tested |
 | --- | --- | --- | --- | --- |
-| card_creation.py | `create_execution_cards` | [ ] | [ ] | [x] |
-| decision.py | `decision_ready` | [ ] | [ ] | [x] |
-| decision.py | `build_projection` | [ ] | [ ] | [x] |
-| decision.py | `decision_blocked` | [ ] | [ ] | [x] |
-| decision.py | `build_notification` | [ ] | [ ] | [x] |
-| execution_batch.py | `canonical_digest` | [ ] | [ ] | [x] |
-| execution_batch.py | `authorize_batch` | [ ] | [ ] | [x] |
-| execution_batch.py | `create_batch` | [ ] | [ ] | [x] |
-| execution_package.py | `shape_package` | [ ] | [ ] | [x] |
-| execution_package.py | `approve_package` | [ ] | [ ] | [x] |
-| execution_package.py | `validate_package` | [ ] | [ ] | [x] |
-| followup.py | `route_followup` | [ ] | [ ] | [x] |
 | harness_core.py | `check` | [x] harness CLI / gate / routing | [x] | [x] |
 | harness_core.py | `has` | [x] harness CLI / gate / routing | [x] | [x] |
 | harness_core.py | `parse_card_body` | [x] harness CLI / gate / routing | [ ] | [x] |
@@ -76,10 +64,6 @@ Regenerate evidence: `grep -rnw <name> plugins skills/ginflow scripts --include=
 | harness_core.py | `linked_artifacts` | [x] harness CLI / gate / routing | [ ] | [ ] |
 | harness_core.py | `startup_gate` | [x] harness CLI / gate / routing | [ ] | [x] |
 | harness_core.py | `artifact_gate` | [x] harness CLI / gate / routing | [ ] | [x] |
-| initiative.py | `validate_initiative` | [ ] | [ ] | [x] |
-| initiative.py | `approve_discovery` | [ ] | [ ] | [x] |
-| initiative.py | `transition` | [ ] | [x] | [x] |
-| merge_request.py | `build_mr_intent` | [ ] | [ ] | [x] |
 | project_config.py | `config_path` | [x] harness CLI / gate / routing | [ ] | [x] |
 | project_config.py | `config_exists` | [x] harness CLI / gate / routing | [ ] | [x] |
 | project_config.py | `load_config` | [x] harness CLI / gate / routing | [ ] | [x] |
@@ -97,36 +81,23 @@ Regenerate evidence: `grep -rnw <name> plugins skills/ginflow scripts --include=
 | project_config.py | `installed_profiles` | [x] harness CLI / gate / routing | [ ] | [ ] |
 | project_config.py | `hermes_default_reviewer` | [ ] | [ ] | [ ] |
 | project_config.py | `seed_default_reviewer` | [ ] | [ ] | [ ] |
-| project_config.py | `documents_block_error` | [ ] | [ ] | [x] |
-| project_config.py | `documents_error` | [ ] | [ ] | [x] |
-| project_config.py | `configured_documents` | [ ] | [ ] | [ ] |
-| project_config.py | `resolve_documents` | [ ] | [ ] | [x] |
-| project_config.py | `require_ready` | [ ] | [ ] | [x] |
-| project_config.py | `set_documents` | [ ] | [ ] | [x] |
 | project_config.py | `active_board` | [x] harness CLI / gate / routing | [ ] | [ ] |
 | project_config.py | `resolve_board` | [x] harness CLI / gate / routing | [ ] | [x] |
 | project_config.py | `persist_context` | [ ] | [ ] | [x] |
 | project_config.py | `persist_worker_defaults` | [ ] | [ ] | [ ] |
 | project_config.py | `initialize_context` | [ ] | [ ] | [ ] |
-| provider_document.py | `normalize` | [x] gate | [ ] | [ ] |
-| provider_document.py | `content_hash` | [x] gate | [ ] | [x] |
-| provider_document.py | `build_provider_document` | [ ] | [ ] | [x] |
-| provider_document.py | `write_local_document` | [ ] | [ ] | [x] |
 | publish.py | `build_push_argv` | [x] gate publish | [ ] | [x] |
 | publish.py | `build_create_argv` | [x] gate publish | [ ] | [x] |
 | publish.py | `build_existing_argv` | [x] gate publish | [ ] | [x] |
 | publish.py | `build_auth_argv` | [x] gate publish | [ ] | [x] |
 | publish.py | `parse_existing_url` | [x] gate publish | [ ] | [x] |
 | publish.py | `parse_created_url` | [x] gate publish | [ ] | [x] |
-| review_cycle.py | `validate_review` | [ ] | [ ] | [x] |
-| review_cycle.py | `append_revision` | [ ] | [ ] | [x] |
-| review_cycle.py | `append_review_revision` | [ ] | [ ] | [ ] |
 | routing.py | `workspace` | [x] harness CLI / gate / routing | [x] | [x] |
 | routing.py | `route` | [x] harness CLI / gate / routing | [x] | [x] |
 
 ## Summary
 
 - Wired: routing context, block guard, block routing with recovery policy and feedback (`blocker_reporting`, `recovery_policy`, `feedback`), completion gate, publish, trace, core harness/routing/publish primitives, config readers (board, context, reviewer, publish, notify).
-- Not wired (library and tests only): Initiative chain (`initiative` → `execution_package` → `execution_batch` / `card_creation` → `decision` / `review_cycle` → `merge_request` / `followup`), provider document builder (`build_provider_document`, `write_local_document`), worker defaults (`configured_worker`, `worker_error`, `resolve_worker_dispatch`, `persist_worker_defaults`), documents config (`documents_*`, `configured_documents`, `resolve_documents`, `require_ready`, `set_documents`), reviewer seeding (`hermes_default_reviewer`, `seed_default_reviewer`).
-- No caller and no test: `project_config.py:configured_worker`, `project_config.py:resolve_worker_dispatch`, `project_config.py:hermes_default_reviewer`, `project_config.py:seed_default_reviewer`, `project_config.py:configured_documents`, `project_config.py:persist_worker_defaults`, `project_config.py:initialize_context`, `review_cycle.py:append_review_revision`.
+- Not wired (library and tests only): worker defaults (`configured_worker`, `worker_error`, `resolve_worker_dispatch`, `persist_worker_defaults`), reviewer seeding (`hermes_default_reviewer`, `seed_default_reviewer`).
+- No caller and no test: `project_config.py:configured_worker`, `project_config.py:resolve_worker_dispatch`, `project_config.py:hermes_default_reviewer`, `project_config.py:seed_default_reviewer`, `project_config.py:persist_worker_defaults`, `project_config.py:initialize_context`.
 - Every plugin test file runs under `make test` (`test_native_review_transition.py`, `test_block_routing.py` and the trace integration test skip when the `hermes` CLI is missing).
