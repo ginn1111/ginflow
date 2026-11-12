@@ -71,21 +71,22 @@ Regenerate evidence: `grep -rnw <name> plugins skills/ginflow scripts --include=
 | project_config.py | `notify_error` | [x] harness CLI / gate / routing | [ ] | [ ] |
 | project_config.py | `configured_notify_target` | [x] harness CLI / gate / routing | [ ] | [ ] |
 | project_config.py | `configured_context` | [x] harness CLI / gate / routing | [ ] | [ ] |
-| project_config.py | `worker_error` | [ ] | [ ] | [x] |
-| project_config.py | `configured_worker` | [ ] | [ ] | [ ] |
-| project_config.py | `resolve_worker_dispatch` | [ ] | [ ] | [ ] |
+| project_config.py | `worker_error` | [x] ginflow init | [ ] | [x] |
+| project_config.py | `configured_worker` | [x] ginflow init | [x] | [ ] |
+| project_config.py | `resolve_worker_dispatch` | [x] ginflow init | [x] | [ ] |
 | project_config.py | `configured_reviewer` | [x] harness CLI / gate / routing | [ ] | [x] |
 | project_config.py | `publish_error` | [x] harness CLI / gate / routing | [ ] | [ ] |
 | project_config.py | `configured_publish` | [x] harness CLI / gate / routing | [ ] | [ ] |
 | project_config.py | `reviewer_error` | [x] harness CLI / gate / routing | [ ] | [x] |
 | project_config.py | `installed_profiles` | [x] harness CLI / gate / routing | [ ] | [ ] |
-| project_config.py | `hermes_default_reviewer` | [ ] | [ ] | [ ] |
-| project_config.py | `seed_default_reviewer` | [ ] | [ ] | [ ] |
+| project_config.py | `hermes_default_reviewer` | [x] ginflow init | [x] | [ ] |
+| project_config.py | `seed_default_reviewer` | [x] ginflow init | [x] | [ ] |
 | project_config.py | `active_board` | [x] harness CLI / gate / routing | [ ] | [ ] |
 | project_config.py | `resolve_board` | [x] harness CLI / gate / routing | [ ] | [x] |
-| project_config.py | `persist_context` | [ ] | [ ] | [x] |
-| project_config.py | `persist_worker_defaults` | [ ] | [ ] | [ ] |
-| project_config.py | `initialize_context` | [ ] | [ ] | [ ] |
+| project_config.py | `persist_context` | [x] ginflow init | [ ] | [x] |
+| project_config.py | `persist_worker_defaults` | [x] ginflow init | [x] | [ ] |
+| project_config.py | `persist_reviewer` | [x] ginflow init | [x] | [ ] |
+| project_config.py | `initialize_context` | [x] ginflow init | [x] | [ ] |
 | publish.py | `build_push_argv` | [x] gate publish | [ ] | [x] |
 | publish.py | `build_create_argv` | [x] gate publish | [ ] | [x] |
 | publish.py | `build_existing_argv` | [x] gate publish | [ ] | [x] |
@@ -98,6 +99,5 @@ Regenerate evidence: `grep -rnw <name> plugins skills/ginflow scripts --include=
 ## Summary
 
 - Wired: routing context, block guard, block routing with recovery policy and feedback (`blocker_reporting`, `recovery_policy`, `feedback`), completion gate, publish, trace, core harness/routing/publish primitives, config readers (board, context, reviewer, publish, notify).
-- Not wired (library and tests only): worker defaults (`configured_worker`, `worker_error`, `resolve_worker_dispatch`, `persist_worker_defaults`), reviewer seeding (`hermes_default_reviewer`, `seed_default_reviewer`).
-- No caller and no test: `project_config.py:configured_worker`, `project_config.py:resolve_worker_dispatch`, `project_config.py:hermes_default_reviewer`, `project_config.py:seed_default_reviewer`, `project_config.py:persist_worker_defaults`, `project_config.py:initialize_context`.
+- Wired via `ginflow init` (`skills/ginflow/scripts/ginflow.py`, tested by `test-ginflow-init.py`): `initialize_context`, `persist_context`, `persist_worker_defaults`, `persist_reviewer`, `configured_worker`, `worker_error`, `resolve_worker_dispatch`, `hermes_default_reviewer`, `seed_default_reviewer`.
 - Every plugin test file runs under `make test` (`test_native_review_transition.py`, `test_block_routing.py` and the trace integration test skip when the `hermes` CLI is missing).
