@@ -21,7 +21,7 @@ Matches sibling guards in `test_block_routing.py`, `test-ginflow-init.py`, `test
 
 - [x] Without `hermes` on PATH, test prints `SKIP: ...`, exits 0
 - [x] `make lint test` passes with and without `hermes` on PATH
-- [ ] CI `make-test` green on PR #33 and #35
+- [x] CI `make-test` green on PR #33 and #35
 
 ## Out of scope
 
