@@ -78,7 +78,8 @@ def remove_path(path: Path) -> None:
 
 
 def backup_path(destination: Path) -> Path:
-    return destination.with_name(destination.name + ".bak.ginflow-install")
+    # Outside plugins/: Hermes loads every plugins/<dir>/plugin.yaml, so an in-place backup runs as a stale duplicate.
+    return destination.parent.parent / ".ginflow-install-backups" / destination.name
 
 
 def backup_existing(destination: Path) -> str | None:
@@ -87,6 +88,7 @@ def backup_existing(destination: Path) -> str | None:
     backup = backup_path(destination)
     if backup.exists() or backup.is_symlink():
         fail(f"backup already exists; uninstall first or resolve manually: {backup}")
+    backup.parent.mkdir(parents=True, exist_ok=True)
     if destination.is_symlink():
         backup.symlink_to(os.readlink(destination), target_is_directory=destination.is_dir())
     elif destination.is_dir():
