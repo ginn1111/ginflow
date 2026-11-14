@@ -9,6 +9,7 @@ import hashlib
 import json
 import os
 import shutil
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -141,6 +142,9 @@ def install(profile_names: list[str]) -> None:
             fail(f"backup already exists; resolve before install: {backup_path(destination)}")
 
     manifest: dict[str, Any] = {"source_root": str(ROOT), "skill": {}, "plugins": {}}
+    bin_link = real_home / ".local/bin/ginflow"
+    if bin_link.exists() or bin_link.is_symlink():
+        fail(f"managed destination exists: {bin_link}")
     rollback: list[tuple[Path, str | None]] = []
     try:
         for key, destination, source in targets:
@@ -157,6 +161,12 @@ def install(profile_names: list[str]) -> None:
             else:
                 manifest["plugins"][key] = entry
                 ok(f"{key}: plugin installed")
+        bin_target = targets[0][1] / "scripts/ginflow.py"
+        bin_link.parent.mkdir(parents=True, exist_ok=True)
+        bin_link.symlink_to(bin_target)
+        rollback.append((bin_link, None))
+        manifest["bin"] = {"path": str(bin_link), "target": str(bin_target)}
+        ok(f"ginflow command linked: {bin_link}")
         write_manifest(manifest)
         ok(f"manifest written to {MANIFEST}")
     except Exception:
@@ -166,6 +176,21 @@ def install(profile_names: list[str]) -> None:
             if backup:
                 shutil.move(backup, destination)
         raise
+    return bin_target, profiles_dir, profiles
+
+
+def init_projects(bin_target: Path, profiles_dir: Path, profiles: list[str], project: str) -> None:
+    """Run `ginflow init` once per profile with that profile's HERMES_HOME."""
+    command = os.environ.get("GINFLOW_BIN") or str(bin_target)
+    extra = os.environ.get("GINFLOW_INIT_ARGS", "").split()
+    failed = []
+    for profile in profiles:
+        env = {**os.environ, "HERMES_HOME": str(profiles_dir / profile)}
+        info(f"{profile}: ginflow init --project {project}")
+        if subprocess.run([command, "init", "--project", project, *extra], env=env).returncode != 0:
+            failed.append(profile)
+    if failed:
+        fail("ginflow init failed for: " + ", ".join(failed))
 
 
 # Rollback state stays in memory until every managed path is installed and the
@@ -205,6 +230,10 @@ def uninstall() -> None:
         for path in conflicts:
             print(f"⚠️  conflict preserved: {path}", file=sys.stderr)
         fail("uninstall blocked by conflicts; no managed paths changed")
+    link = json.loads(MANIFEST.read_text()).get("bin")
+    if link and Path(link["path"]).is_symlink() and os.readlink(link["path"]) == link["target"]:
+        Path(link["path"]).unlink()
+        ok("ginflow command: removed")
     for label, path, digest, backup in entries:
         remove_managed(path, digest, backup)
         ok(f"{label}: removed")
@@ -214,7 +243,9 @@ def uninstall() -> None:
 if not ARGS or ARGS[0] not in {"install", "uninstall"}:
     fail(f"usage: {Path(sys.argv[0]).name} install [profile ...]|uninstall")
 if ARGS[0] == "install":
-    install(ARGS[1:])
+    result = install(ARGS[1:])
+    if os.environ.get("PROJECT"):
+        init_projects(*result, os.environ["PROJECT"])
 elif len(ARGS) == 1:
     uninstall()
 else:

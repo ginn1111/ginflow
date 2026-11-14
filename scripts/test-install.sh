@@ -33,7 +33,7 @@ python3 - "$GINFLOW_INSTALL_MANIFEST" <<'PY'
 import json, sys
 with open(sys.argv[1]) as f:
     manifest = json.load(f)
-assert set(manifest) == {"source_root", "skill", "plugins"}, sorted(manifest)
+assert set(manifest) == {"source_root", "skill", "plugins", "bin"}, sorted(manifest)
 PY
 
 # Copied gate package loads from a profile: every core module from ~/.agents/skills/ginflow/lib.
@@ -59,12 +59,14 @@ assert "keep-me" in text
 assert "keep-plugin" in text
 PY
 
+[[ -L "$HOME_ROOT/.local/bin/ginflow" && -x "$SKILL/scripts/ginflow.py" ]]
+
 # Reinstall is idempotent.
 bash "$ROOT/scripts/install.sh" install >/dev/null
 [[ -f "$SKILL/SKILL.md" && -f "$PROFILES/beta/plugins/ginflow-trace/plugin.yaml" ]]
 
 bash "$ROOT/scripts/install.sh" uninstall >/dev/null
-[[ ! -e "$SKILL" ]]
+[[ ! -e "$SKILL" && ! -L "$HOME_ROOT/.local/bin/ginflow" ]]
 [[ ! -e "$PROFILES/alpha/plugins/ginflow-trace" && ! -e "$PROFILES/beta/plugins/ginflow-trace" ]]
 [[ -f "$PROFILES/alpha/config.yaml" ]]
 [[ ! -e "$GINFLOW_INSTALL_MANIFEST" ]]
@@ -77,6 +79,23 @@ if bash "$ROOT/scripts/install.sh" install alpha missing >/dev/null 2>&1; then
   echo "expected failure for unknown profile" >&2
   exit 1
 fi
+[[ ! -e "$SKILL" && ! -e "$GINFLOW_INSTALL_MANIFEST" ]]
+
+# PROJECT runs `ginflow init --project <path>` once per profile with that profile's HERMES_HOME.
+printf '#!/bin/sh\necho "$HERMES_HOME $*" >> "%s/init.log"\n' "$TMP" > "$TMP/stub"
+chmod +x "$TMP/stub"
+mkdir "$TMP/proj"
+PROJECT="$TMP/proj" GINFLOW_BIN="$TMP/stub" GINFLOW_INIT_ARGS="--board b" bash "$ROOT/scripts/install.sh" install >/dev/null
+[[ "$(wc -l < "$TMP/init.log")" == 2 ]]
+grep -qx "$PROFILES/alpha init --project $TMP/proj --board b" "$TMP/init.log"
+grep -qx "$PROFILES/beta init --project $TMP/proj --board b" "$TMP/init.log"
+bash "$ROOT/scripts/install.sh" uninstall >/dev/null
+printf '#!/bin/sh\nexit 1\n' > "$TMP/stub"
+if PROJECT="$TMP/proj" GINFLOW_BIN="$TMP/stub" bash "$ROOT/scripts/install.sh" install >/dev/null 2>&1; then
+  echo "expected install failure when init fails" >&2
+  exit 1
+fi
+bash "$ROOT/scripts/install.sh" uninstall >/dev/null
 [[ ! -e "$SKILL" && ! -e "$GINFLOW_INSTALL_MANIFEST" ]]
 
 # Bootstrap one-liner: clones, installs into the selected profile only, rerun is idempotent, dirty clone aborts.

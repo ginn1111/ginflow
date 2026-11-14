@@ -355,11 +355,11 @@ def installed_profiles() -> list[str]:
 
 def hermes_default_reviewer() -> str | None:
     home = os.environ.get("HERMES_HOME")
-    if not home or yaml is None:
+    if not home:
         return None
     try:
-        data = yaml.safe_load((Path(home) / "config.yaml").read_text(encoding="utf-8"))
-    except (OSError, yaml.YAMLError):
+        data = _loads((Path(home) / "config.yaml").read_text(encoding="utf-8"))
+    except _PARSE_ERRORS:
         return None
     kanban = data.get("kanban") if isinstance(data, dict) else None
     value = kanban.get("default_reviewer_profile") if isinstance(kanban, dict) else None
@@ -510,6 +510,21 @@ def persist_worker_defaults(
     return path
 
 
+def persist_reviewer(workspace: Path, profile: str) -> bool:
+    """Atomically set ginflow.reviewer.profile in a valid config; False on failure or no change."""
+    workspace = Path(workspace).expanduser().resolve()
+    profile = (profile or "").strip()
+    if not profile or context_error(workspace) or configured_reviewer(workspace) == profile:
+        return False
+    data = load_config(workspace)
+    data["ginflow"] = {**data["ginflow"], "reviewer": {"profile": profile}}
+    try:
+        _atomic_write(config_path(workspace), _dumps(data))
+    except OSError:
+        return False
+    return True
+
+
 def initialize_context(
     workspace: Path,
     *,
@@ -552,4 +567,4 @@ def initialize_context(
     return persisted
 
 
-__all__ = ["ReviewerConfigError", "configured_reviewer", "configured_publish", "publish_error", "hermes_default_reviewer", "installed_profiles", "reviewer_error", "seed_default_reviewer", "CONFIG_RELATIVE_PATH", "WORKER_FIELDS", "ContextInitializationError", "WorkerDefaultsError", "active_board", "config_exists", "config_path", "configured_context", "configured_worker", "context_error", "initialize_context", "load_config", "persist_context", "persist_worker_defaults", "resolve_board", "resolve_worker_dispatch", "worker_error"]
+__all__ = ["ReviewerConfigError", "configured_reviewer", "configured_publish", "publish_error", "hermes_default_reviewer", "installed_profiles", "reviewer_error", "seed_default_reviewer", "CONFIG_RELATIVE_PATH", "WORKER_FIELDS", "ContextInitializationError", "WorkerDefaultsError", "active_board", "config_exists", "config_path", "configured_context", "configured_worker", "context_error", "initialize_context", "load_config", "persist_context", "persist_worker_defaults", "persist_reviewer", "resolve_board", "resolve_worker_dispatch", "worker_error"]

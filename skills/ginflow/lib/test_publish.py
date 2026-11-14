@@ -33,9 +33,7 @@ assert build_auth_argv("github") == ["gh", "auth", "status"] and build_auth_argv
 raises(build_auth_argv, "x")
 
 assert parse_existing_url("github", '[{"url":"https://github.com/o/r/pull/7"}]') == "https://github.com/o/r/pull/7"
-# ponytail: URL path built in parts so the PRUNE-1 grep stays clean; real GitLab URLs use /-/merge_requests/.
-MR = "merge" + "_requests"
-assert parse_existing_url("gitlab", f'[{{"web_url":"https://gitlab.x/g/p/-/{MR}/3"}}]') == f"https://gitlab.x/g/p/-/{MR}/3"
+assert parse_existing_url("gitlab", '[{"web_url":"https://gitlab.x/g/p/-/merge_requests/3"}]') == "https://gitlab.x/g/p/-/merge_requests/3"
 assert parse_existing_url("github", "[]") is None and parse_existing_url("github", "not json") is None
 assert parse_created_url("Creating...\nhttps://github.com/o/r/pull/8\n") == "https://github.com/o/r/pull/8"
 assert parse_created_url("error") is None

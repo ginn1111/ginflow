@@ -1,5 +1,5 @@
 ---
-status: draft
+status: completed
 card: STACK-1
 scope: see spec
 owner: ginb
