@@ -45,6 +45,7 @@ test: lint core-test lifecycle-test plugin-test install-test
 
 core-test:
 	python3 skills/ginflow/lib/test_publish.py
+	python3 skills/ginflow/lib/spec_cards.py
 
 # ponytail: keep lib tests as direct scripts until shared repository test runner exists.
 
@@ -54,6 +55,7 @@ lifecycle-test:
 	python3 skills/ginflow/scripts/test-project-reviewer.py
 	python3 skills/ginflow/scripts/test-worktree-context.py
 	python3 skills/ginflow/scripts/test-ginflow-init.py
+	python3 skills/ginflow/scripts/test-ginflow-cards.py
 	python3 skills/ginflow/scripts/test-ginflow-pr-sync.py
 
 install-test:

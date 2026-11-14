@@ -119,6 +119,8 @@ Links:
 
 Hermes stores workspace, status, assignee, ID on the task row, and `artifact_baseline` in latest completion run metadata. No shadow card JSON.
 
+Create cards from specs: put `card`, `assignee`, `blocked_by: [KEY]` in spec front matter, then run `ginflow cards create [--board B] docs/specs/*.md`. It preflights (nothing created on failure), creates blocked cards in dependency order, links `blocked_by` edges, runs the harness candidate check, unblocks passing cards, prints JSON. Rerun is idempotent (matches title prefix `<KEY> — `). Manual path:
+
 Create card without dispatch race:
 
 1. Draft card and artifacts in memory.
