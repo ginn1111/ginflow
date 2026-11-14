@@ -101,3 +101,15 @@ Do not launch a `/background` watcher for a selected `running` card. Card creati
 
 Run target-declared project verification first. Run ginflow harness externally against target and selected card; never copy harness into target repo. Report project verification and harness result separately.
 After artifact-repository updates, run `make verify` for standalone repository health. Runtime integration checks are optional and external.
+
+## Stacking
+
+A child card does not wait for its parent's PR merge. `ginflow-gate` (`kanban_task_completed` hook, `stacking.py`) acts when the completion makes all parents of a `worktree` child `done`, in a repo with `.ginflow.yaml`:
+
+- one parent: `wt/<child>` is created from the parent branch head and `<repo>/.worktrees/<child>` is its worktree; Hermes reuses it.
+- several parents: branch from the first parent (link order), `git merge --no-ff` the rest. Conflict: merge aborted (clean tree), child blocked `needs_input` with `required_action: resolve merge of <branches>`.
+- child gets `[ginflow-stack] base=<branches> head=<sha>`.
+- child already `running`/`done`/`archived`: no git change; `[ginflow-stack] stale-base` comment + notify when its branch lacks a parent head.
+- parent without a worktree (`dir:`): skipped. Hook is observer-only; failures are logged.
+
+Publish: exactly one parent with an open PR (`ginflow-publish: <url>` comment, `gh pr view` state `OPEN`) opens the child PR with `--base <parent branch>`. Several parents: base is the configured target and the body lists open parent PRs as `Merge after: <urls>`. Merged or absent parent PR: configured target.
