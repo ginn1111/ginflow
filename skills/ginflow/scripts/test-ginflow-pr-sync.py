@@ -21,9 +21,12 @@ URL = "https://example.test/o/r/pull/7"
 BODY = "Objective: parent\nScope:\n- src/x\nAcceptance:\n- done\nLinks:\n- docs/specs/X-1.md"
 STUB = r'''#!/bin/sh
 echo "gh $*" >> "$FAKE_DIR/calls.log"
-case "$1 $2" in
-  "pr view") cat "$FAKE_DIR/pr.json" ;;
-  "api repos/o/r/pulls/7/comments") cat "$FAKE_DIR/inline.json" ;;
+case "$1 $2 $3" in
+  "pr view "*/7) cat "$FAKE_DIR/pr.json" ;;
+  "pr view "*/8) cat "$FAKE_DIR/child.json" ;;
+  "pr view "*/9) cat "$FAKE_DIR/pr9.json" ;;
+  "pr edit "*) exit 0 ;;
+  "api "*) cat "$FAKE_DIR/inline.json" ;;
   *) exit 1 ;;
 esac
 '''
@@ -65,7 +68,7 @@ def main():
         return r.stdout
 
     def stub(reviews=(), comments=(), inline=(), state="OPEN"):
-        (fake / "pr.json").write_text(json.dumps({"state": state, "headRefName": "wt/t_parent", "reviews": list(reviews),
+        (fake / "pr.json").write_text(json.dumps({"state": state, "headRefName": "wt/t_parent", "mergeCommit": {"oid": "abc1234def"}, "reviews": list(reviews),
                                                   "comments": list(comments)}))
         (fake / "inline.json").write_text(json.dumps(list(inline)))
 
@@ -120,13 +123,48 @@ def main():
     r = sh(sys.executable, str(CLI), "pr", "sync", "--board", BOARD)
     assert r.returncode == 1 and f"fail {parent}" in r.stdout, r.stdout
 
-    # merged PR: marker, then no more gh calls for it
+    # merged PR: child PR retargeted, marker, main fast-forwarded; later runs silent
+    ok("git", "config", "user.email", "t@t")
+    ok("git", "config", "user.name", "t")
+    ok("git", "commit", "-q", "--allow-empty", "-m", "one")
+    origin, other = tmp / "origin.git", tmp / "other"
+    ok("git", "init", "-q", "--bare", "-b", "main", str(origin))
+    ok("git", "remote", "add", "origin", str(origin))
+    ok("git", "push", "-q", "origin", "main")
+    ok("git", "clone", "-q", str(origin), str(other))
+    ok("git", "-C", str(other), "config", "user.email", "t@t")
+    ok("git", "-C", str(other), "config", "user.name", "t")
+
+    def origin_commit():
+        ok("git", "-C", str(other), "commit", "-q", "--allow-empty", "-m", "more")
+        ok("git", "-C", str(other), "push", "-q", "origin", "main")
+
+    child = json.loads(kb("create", "C-1 — child", "--body", BODY, "--assignee", "ginb", "--json"))["id"]
+    kb("link", parent, child)
+    kb("comment", child, "ginflow-publish: https://example.test/o/r/pull/8")
+    (fake / "child.json").write_text(json.dumps({"state": "OPEN", "baseRefName": "wt/t_parent"}))
+    origin_commit()
     stub(state="MERGED")
-    sync()
-    assert any(c["body"] == "[ginflow-pr] merged" for c in show(parent)["comments"])
+    out = sync()
+    assert f"set {child}: base wt/t_parent -> main" in out, out
+    assert any(c["body"] == "[ginflow-pr] merged abc1234def" for c in show(parent)["comments"])
+    log = (fake / "calls.log").read_text()
+    assert "gh pr edit https://example.test/o/r/pull/8 --base main" in log, log
+    assert ok("git", "rev-list", "--count", "main..origin/main") == "0" and "fast-forwarded" in out, out
     calls = (fake / "calls.log").read_text()
-    sync()
-    assert (fake / "calls.log").read_text() == calls
+    assert sync() == "" and (fake / "calls.log").read_text() == calls  # nothing to do: silent, no gh calls
+
+    # dirty checkout: warn, no change
+    parent2 = json.loads(kb("create", "P-2 — parent", "--body", BODY, "--assignee", "ginb", "--workspace", f"dir:{repo}", "--json"))["id"]
+    kb("claim", parent2)
+    kb("complete", parent2, "--summary", "ok")
+    kb("comment", parent2, "ginflow-publish: https://example.test/o/r/pull/9")
+    (fake / "pr9.json").write_text(json.dumps({"state": "MERGED", "headRefName": "wt/t_p2", "reviews": [], "comments": []}))
+    origin_commit()
+    (repo / "dirty.txt").write_text("x")
+    before = ok("git", "rev-parse", "main")
+    out = sync()
+    assert "warn main: dirty checkout" in out and ok("git", "rev-parse", "main") == before, out
     shutil.rmtree(tmp, ignore_errors=True)
     print("PASS: ginflow pr sync")
 

@@ -81,4 +81,5 @@ Each step prints `ok|set|fail <step>: <detail>`; exit 0 when no `fail`. A second
 5. `notify`: `ginflow.notify` valid.
 6. `auth`: `gh`/`glab auth status` when `ginflow.publish` is set.
 7. `main`: after `git fetch`, local target branch must not be behind `<remote>/<target>` (`fail main: behind origin/main by N`).
-8. `dispatcher`: `hermes gateway status` reports running.
+8. `sync`: ensures one cron job `ginflow-pr-sync:<board>` (every 10m, `--no-agent`, `--deliver` = `ginflow.notify.target` or `origin`) running `~/.hermes/scripts/ginflow-pr-sync-<board>.sh` → `ginflow pr sync`. Same job present: ok; present with a different script: `fail`, never replaced. Empty stdout = no delivery.
+9. `dispatcher`: `hermes gateway status` reports running.

@@ -5,7 +5,9 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import os
 import re
+import shlex
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -176,6 +178,27 @@ class Init:
             return self.say("fail", "main", f"behind {ref} by {count}")
         self.say("ok", "main", f"{target} up to date with {ref}")
 
+    def sync(self, repo: Path, board: str | None) -> None:
+        if not board:
+            return
+        name, home = f"ginflow-pr-sync:{board}", Path(os.environ.get("HERMES_HOME") or Path.home() / ".hermes")
+        script = home / "scripts" / f"ginflow-pr-sync-{board}.sh"
+        want = (f"#!/bin/sh\nexec {shlex.quote(sys.executable)} {shlex.quote(str(Path(__file__).resolve()))} "
+                f"pr sync --board {shlex.quote(board)} --project {shlex.quote(str(repo))}\n")
+        try:
+            jobs = json.loads((home / "cron/jobs.json").read_text())["jobs"]
+        except (OSError, ValueError, KeyError):
+            jobs = []
+        if any(j.get("name") == name for j in jobs):
+            same = script.exists() and script.read_text() == want
+            return self.say("ok" if same else "fail", "sync", name if same else f"{name} exists with a different command")
+        script.parent.mkdir(parents=True, exist_ok=True)
+        script.write_text(want)
+        script.chmod(0o755)
+        target = pc.configured_notify_target(repo) or "origin"
+        made = run(["hermes", "cron", "create", "every 10m", "--name", name, "--script", script.name, "--no-agent", "--deliver", target])
+        self.say("set" if made.returncode == 0 else "fail", "sync", name if made.returncode == 0 else (made.stderr or made.stdout).strip())
+
     def dispatcher(self) -> None:
         out = run(["hermes", "gateway", "status"])
         running = out.returncode == 0 and "running" in out.stdout.lower() and "not running" not in out.stdout.lower()
@@ -196,6 +219,7 @@ class Init:
         self.notify(repo) if pc.config_exists(repo) else None
         self.auth(repo) if pc.config_exists(repo) else None
         self.main_branch(repo)
+        self.sync(repo, board) if not self.failed else None
         self.dispatcher()
         return 1 if self.failed else 0
 
@@ -214,7 +238,7 @@ class PrSync:
     """`ginflow pr sync`: PR feedback becomes a follow-up card on the PR head branch (PRFB-1)."""
 
     def __init__(self, board: str | None, repo: Path) -> None:
-        self.board, self.repo, self.failed = board, repo, False
+        self.board, self.repo, self.failed, self.merged = board, repo, False, False
 
     def kb(self, *args: str):
         return core.kanban_json(self.board, *args)
@@ -232,7 +256,7 @@ class PrSync:
         return out.stdout
 
     def feedback(self, url: str, since: float) -> tuple[dict, list[str]]:
-        pr = json.loads(self.gh("pr", "view", url, "--json", "state,headRefName,reviews,comments"))
+        pr = json.loads(self.gh("pr", "view", url, "--json", "state,headRefName,mergeCommit,reviews,comments"))
         slug, number = PR_URL.match(url).groups()
         raw = []  # (when, who, where, text)
         for r in pr.get("reviews") or []:
@@ -285,11 +309,17 @@ class PrSync:
         if not PR_URL.match(url):
             return print(f"skip {url}: provider gitlab not supported yet")
         pr, lines = self.feedback(url, since)
-        if pr.get("state") in ("MERGED", "CLOSED"):
-            self.kb_run("comment", tid, f"[ginflow-pr] {pr['state'].lower()}")
+        if pr.get("state") == "MERGED":
+            sha = (pr.get("mergeCommit") or {}).get("oid", "")
+            self.retarget(data, pr["headRefName"])
+            self.kb_run("comment", tid, f"[ginflow-pr] merged {sha}".strip())
+            self.merged = True
+            return print(f"set {tid}: merged {sha[:7]}".strip())
+        if pr.get("state") == "CLOSED":
+            self.kb_run("comment", tid, "[ginflow-pr] closed")
             return
         if not lines:
-            return print(f"ok {tid}: no new feedback")
+            return
         number = PR_URL.match(url).group(2)
         open_id, count = self.open_fb(data, number)
         if open_id:
@@ -298,6 +328,35 @@ class PrSync:
         else:
             self.create_fb(task, pr["headRefName"], number, count + 1, lines)
         self.kb_run("comment", tid, f"[ginflow-pr] synced={datetime.now(timezone.utc):%Y-%m-%dT%H:%M:%SZ} items={len(lines)}")
+
+    def retarget(self, data: dict, head: str) -> None:
+        """Child PRs still based on the merged branch: GitHub only retargets when the branch is deleted."""
+        target = (pc.configured_publish(self.repo) or {}).get("target", "main")
+        for cid in data.get("children") or []:
+            urls = [m.group(1) for c in self.kb("show", cid, "--json").get("comments") or []
+                    if (m := PUBLISHED.match(str(c.get("body") or "")))]
+            if not urls or not PR_URL.match(urls[-1]):
+                continue
+            child = json.loads(self.gh("pr", "view", urls[-1], "--json", "state,baseRefName"))
+            if child.get("state") == "OPEN" and child.get("baseRefName") == head:
+                self.gh("pr", "edit", urls[-1], "--base", target)
+                print(f"set {cid}: base {head} -> {target}")
+
+    def fast_forward(self) -> None:
+        # ponytail: uses the --project checkout; same repo as board default_workdir after `ginflow init`.
+        settings = pc.configured_publish(self.repo) or {}
+        target, remote = settings.get("target", "main"), settings.get("remote", "origin")
+        if git(self.repo, "fetch", remote).returncode:
+            return print(f"warn {target}: fetch {remote} failed")
+        branch = git(self.repo, "rev-parse", "--abbrev-ref", "HEAD").stdout.strip()
+        if branch != target:
+            return print(f"warn {target}: on {branch}")
+        if git(self.repo, "status", "--porcelain").stdout.strip():
+            return print(f"warn {target}: dirty checkout")
+        if git(self.repo, "rev-list", "--count", f"{target}..{remote}/{target}").stdout.strip() in ("", "0"):
+            return
+        done = git(self.repo, "merge", "--ff-only", f"{remote}/{target}")
+        print(f"set {target}: fast-forwarded to {remote}/{target}" if done.returncode == 0 else f"warn {target}: not fast-forwardable")
 
     def create_fb(self, task: dict, head: str, number: str, n: int, lines: list[str]) -> None:
         fields = core.parse_card_body(task.get("body"))
@@ -326,6 +385,8 @@ class PrSync:
             except Exception as exc:  # one PR failing must not stop the rest
                 self.failed = True
                 print(f"fail {task['id']}: {exc}")
+        if self.merged:
+            self.fast_forward()
         return 1 if self.failed else 0
 
 
