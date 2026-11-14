@@ -538,6 +538,6 @@ class Hooks:
 package = importlib.import_module("ginflow-gate")
 hooks = Hooks()
 package.register(hooks)
-assert hooks.names == ["pre_llm_call", "pre_tool_call", "kanban_task_blocked", "pre_tool_call", "post_tool_call"]
+assert hooks.names == ["pre_llm_call", "pre_tool_call", "kanban_task_blocked", "pre_tool_call", "post_tool_call", "kanban_task_completed"]
 
 print("ginflow gate rejection test passed")

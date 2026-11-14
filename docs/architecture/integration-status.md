@@ -6,7 +6,7 @@ owner: ginb
 
 # Integration status — plugins and core
 
-Wired = reached from a Hermes hook (`pre_llm_call`, `pre_tool_call`, `post_tool_call`, `kanban_task_blocked`), plugin load, or the harness CLI (`validate-harness.py`); the wired cell names the path. Doc = named in `skills/ginflow/SKILL.md` or its references. Tested = named in a test run by `make test`. Public = top-level function without a leading underscore (plus `_routing_context`, the `pre_llm_call` hook). Wired cells follow call-graph reading of hook registrations; Doc and Tested cells are word-grep matches, so generic names (`check`, `has`) can over-report.
+Wired = reached from a Hermes hook (`pre_llm_call`, `pre_tool_call`, `post_tool_call`, `kanban_task_blocked`, `kanban_task_completed`), plugin load, or the harness CLI (`validate-harness.py`); the wired cell names the path. Doc = named in `skills/ginflow/SKILL.md` or its references. Tested = named in a test run by `make test`. Public = top-level function without a leading underscore (plus `_routing_context`, the `pre_llm_call` hook). Wired cells follow call-graph reading of hook registrations; Doc and Tested cells are word-grep matches, so generic names (`check`, `has`) can over-report.
 
 Regenerate evidence: `grep -rnw <name> plugins skills/ginflow scripts --include=*.py | grep -v test` for callers; `grep -rnw <name> plugins skills/ginflow scripts --include='test*.py'` for tests; `grep -rnw <name> skills/ginflow --include=*.md` for docs.
 
@@ -31,11 +31,15 @@ Regenerate evidence: `grep -rnw <name> plugins skills/ginflow scripts --include=
 | publish.py | `active_profile` | [x] pre_tool_call | [ ] | [ ] |
 | publish.py | `auth_error` | [x] pre_llm_call | [ ] | [ ] |
 | publish.py | `prepare` | [x] pre_tool_call | [ ] | [ ] |
-| publish.py | `publish` | [x] post_tool_call | [x] | [x] |
+| publish.py | `base_and_body` | [x] pre_tool_call | [x] | [x] |
+| publish.py | `publish` | [x] post_tool_call | [x] | [x] | 
 | publish.py | `finish` | [x] post_tool_call | [x] | [ ] |
 | recovery_policy.py | `evaluate_recovery` | [x] kanban_task_blocked | [ ] | [x] |
 | routing.py | `register` | [x] plugin load | [ ] | [x] |
 | routing.py | `_routing_context` | [x] pre_llm_call | [ ] | [x] |
+| stacking.py | `on_task_completed` | [x] kanban_task_completed | [x] | [x] |
+| stacking.py | `stack_child` | [x] kanban_task_completed | [x] | [x] |
+| stacking.py | `register` | [x] plugin load | [ ] | [x] |
 | skill_lib.py | `load` | [x] import time | [x] | [x] |
 | trace_adapter.py | _(no public function)_ | - | - | - |
 
@@ -105,4 +109,5 @@ Regenerate evidence: `grep -rnw <name> plugins skills/ginflow scripts --include=
 - Wired: routing context, block guard, block routing with recovery policy and feedback (`blocker_reporting`, `recovery_policy`, `feedback`), completion gate, publish, trace, core harness/routing/publish primitives, config readers (board, context, reviewer, publish, notify).
 - Wired via `ginflow init` (`skills/ginflow/scripts/ginflow.py`, tested by `test-ginflow-init.py`): `initialize_context`, `persist_context`, `persist_worker_defaults`, `persist_reviewer`, `configured_worker`, `worker_error`, `resolve_worker_dispatch`, `hermes_default_reviewer`, `seed_default_reviewer`.
 - Wired via `ginflow cards create` (`skills/ginflow/scripts/ginflow.py`, tested by `test-ginflow-cards.py` and the `spec_cards.py` self-check): `front_matter`, `section`, `load_spec`, `order`.
+- Wired via `ginflow pr sync` (`skills/ginflow/scripts/ginflow.py`, tested by `test-ginflow-pr-sync.py`): PR feedback becomes a follow-up card (PRFB-1). `publish.publish` also comments `[ginflow] updated <sha> by <KEY>` on an existing PR (tested by `test_publish_hook.py`).
 - Every plugin test file runs under `make test` (`test_native_review_transition.py`, `test_block_routing.py` and the trace integration test skip when the `hermes` CLI is missing).

@@ -6,3 +6,4 @@ hooks:
   - pre_tool_call
   - post_tool_call
   - kanban_task_blocked
+  - kanban_task_completed

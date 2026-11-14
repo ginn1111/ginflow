@@ -88,6 +88,21 @@ Routing hints from the plugin are advisory, not authorization. Call `skill_view`
 - Block on material ambiguity; do not invent requirements.
 - Do not resume or derive work from a completed card with unresolved drift. Unrelated cards and unlinked project work may continue.
 
+## Continuous flow
+
+Never wait for a human merge to continue. A parent card is `done` when the reviewer completes it; its PR merge is asynchronous.
+
+- Child cards start from the parent's branch, not `main`: stack the worktree (`references/kanban-guide.md` "Stacking"), then unblock. Hermes holds children in `todo` until every parent is `done`.
+- Keep dispatching every card whose parents are `done`. Report each opened PR; do not ask before moving on.
+- Merging stays with the human, any time and in any order GitHub allows. Stacked PRs make order explicit.
+
+Wait for the human only when:
+
+- the next step is dangerous or irreversible: force-push or history rewrite, deleting branches/boards/cards/data, merging, repo or security settings, credentials, purchases, external messages as the human;
+- real human input is needed: a `needs_input` / `capability` block, an unresolvable stack merge conflict, an unclear or conflicting requirement, missing access.
+
+Everything else (open PRs, push card branches, stack, unblock, re-dispatch, recovery) proceeds without asking.
+
 ## Kanban card shape
 
 Thin card: objective, scope, acceptance, link to artifact. Exact body labels (gate rejects malformed):
@@ -168,7 +183,7 @@ Copy setup `templates/hermes.md` to `.hermes.md`, add to `.git/info/exclude` bef
 
 ## Stop rules
 
-Stop and clarify when:
+Stop and clarify when (and only then; a pending PR merge is never a stop reason, see "Continuous flow"):
 
 - wrong repo
 - no selected card after pre-card shaping

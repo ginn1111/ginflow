@@ -72,6 +72,27 @@ Workspace rule:
 
 Do not leave project work in scratch workspace if files must be read from repo.
 
+## Stacking
+
+Run when a parent card is `done` and its child is about to start (until the plugin hook does it automatically). `<repo>` = board `default_workdir`; branches default to `wt/<task-id>`.
+
+```bash
+# one parent
+git -C <repo> branch wt/<child> wt/<parent>
+# several parents: base on the first, merge the rest
+git -C <repo> branch wt/<child> wt/<parent-1>
+git -C <repo> worktree add <repo>/.worktrees/<child> wt/<child>
+git -C <repo>/.worktrees/<child> merge --no-ff wt/<parent-2>   # conflict: merge --abort, block child needs_input
+hermes kanban --board <board> comment <child> "[ginflow-stack] base=<parent branches> head=<sha>"
+hermes kanban --board <board> unblock <child> --reason "stacked on <parent branches>"
+```
+
+- Hermes reuses an existing `wt/<child>` branch or worktree instead of cutting from `HEAD`.
+- Skip when the child is already `running`/`done` or its branch exists.
+- Child PR: one open parent PR → base `wt/<parent>`; several → base target, body `Merge after: <parent PR URLs>`. Until the plugin does it, publish opens against `ginflow.publish.target`; fix right after: `gh pr edit <child-pr> --base wt/<parent>` (one parent) or add `Merge after:` with `gh pr edit --body` (several).
+- After a parent PR merges, retarget children still based on its branch: `gh pr edit <child-pr> --base <target>`.
+- Stale local target branch: `git -C <repo> fetch` then fast-forward only when clean; never reset or force.
+
 ## Feedback boundary
 
 Notification transport remains adapter-owned.
@@ -82,3 +103,28 @@ Do not launch a `/background` watcher for a selected `running` card. Card creati
 
 Run target-declared project verification first. Run ginflow harness externally against target and selected card; never copy harness into target repo. Report project verification and harness result separately.
 After artifact-repository updates, run `make verify` for standalone repository health. Runtime integration checks are optional and external.
+
+## Stacking
+
+A child card does not wait for its parent's PR merge. `ginflow-gate` (`kanban_task_completed` hook, `stacking.py`) acts when the completion makes all parents of a `worktree` child `done`, in a repo with `.ginflow.yaml`:
+
+- one parent: `wt/<child>` is created from the parent branch head and `<repo>/.worktrees/<child>` is its worktree; Hermes reuses it.
+- several parents: branch from the first parent (link order), `git merge --no-ff` the rest. Conflict: merge aborted (clean tree), child blocked `needs_input` with `required_action: resolve merge of <branches>`.
+- child gets `[ginflow-stack] base=<branches> head=<sha>`.
+- child already `running`/`done`/`archived`: no git change; `[ginflow-stack] stale-base` comment + notify when its branch lacks a parent head.
+- parent without a worktree (`dir:`): skipped. Hook is observer-only; failures are logged.
+
+Publish: exactly one parent with an open PR (`ginflow-publish: <url>` comment, `gh pr view` state `OPEN`) opens the child PR with `--base <parent branch>`. Several parents: base is the configured target and the body lists open parent PRs as `Merge after: <urls>`. Merged or absent parent PR: configured target.
+
+## PR feedback
+
+`ginflow pr sync [--board B] [--project P]` (run by hand or cron; Hermes has no PR event hook) turns PR review feedback into a follow-up card on the same branch:
+
+- candidates: `done` cards with a `ginflow-publish: <url>` comment and no `[ginflow-pr] merged|closed` comment. GitHub only; GitLab URLs print `skip <url>: provider gitlab not supported yet`.
+- new items = review bodies (incl. `CHANGES_REQUESTED`), issue comments and inline comments newer than the latest `[ginflow-pr] synced=<iso>` comment (default: card `completed_at`). Bodies starting with `[ginflow]` are ignored: Gin and ginflow share one GitHub account, so that prefix is the only author filter.
+- no open feedback card for the PR: create `<KEY>-fb<N> — PR #<n> feedback` on the PR head branch (`--branch`), assignee = parent assignee, Scope/Links copied from the parent, one Acceptance line per comment plus `make lint test` passes; linked parent → fb; unblocked to `ready`. A clean stale worktree holding the branch is removed first; a dirty one leaves the card `blocked needs_input`.
+- open feedback card exists: items are appended there as a `[ginflow-pr] new feedback:` comment.
+- parent gets `[ginflow-pr] synced=<now> items=<n>` whenever items were found. Merged/closed PR: parent gets `[ginflow-pr] merged|closed` and is no longer synced.
+- one `gh` failure is reported (`fail <id>: ...`), the rest continue, exit 1.
+
+Publish on a branch with an open PR pushes, comments `[ginflow] updated <sha> by <KEY>` on the PR and `ginflow-publish: <url> (updated)` on the card; no second PR.

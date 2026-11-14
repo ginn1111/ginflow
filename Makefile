@@ -36,7 +36,7 @@ clean:
 
 lint:
 	bash -n scripts/*.sh
-	@if compgen -G 'scripts/*.py' >/dev/null; then python3 -m py_compile scripts/*.py; fi
+	@set -- scripts/*.py; if [ -e "$$1" ]; then python3 -m py_compile "$$@"; fi
 	python3 -m py_compile skills/ginflow/scripts/*.py
 	@echo "lint ok"
 
@@ -56,6 +56,7 @@ lifecycle-test:
 	python3 skills/ginflow/scripts/test-worktree-context.py
 	python3 skills/ginflow/scripts/test-ginflow-init.py
 	python3 skills/ginflow/scripts/test-ginflow-cards.py
+	python3 skills/ginflow/scripts/test-ginflow-pr-sync.py
 
 install-test:
 	bash scripts/test-install.sh
@@ -68,6 +69,7 @@ plugin-test:
 	python3 plugins/ginflow-gate/test_reviewer_injection.py
 	python3 plugins/ginflow-gate/test_block_guard.py
 	python3 plugins/ginflow-gate/test_publish_hook.py
+	python3 plugins/ginflow-gate/test_stacking.py
 	@if command -v hermes >/dev/null 2>&1; then python3 plugins/ginflow-gate/test_block_routing.py; else echo "SKIP: block routing (hermes CLI not installed)"; fi
 	@if command -v hermes >/dev/null 2>&1; then python3 plugins/ginflow-gate/test_native_review_transition.py; else echo "SKIP: native review transition (hermes CLI not installed)"; fi
 	$(MAKE) trace-test
