@@ -36,7 +36,7 @@ clean:
 
 lint:
 	bash -n scripts/*.sh
-	@if compgen -G 'scripts/*.py' >/dev/null; then python3 -m py_compile scripts/*.py; fi
+	@set -- scripts/*.py; if [ -e "$$1" ]; then python3 -m py_compile "$$@"; fi
 	python3 -m py_compile skills/ginflow/scripts/*.py
 	@echo "lint ok"
 

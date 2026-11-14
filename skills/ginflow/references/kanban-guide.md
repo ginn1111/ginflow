@@ -70,6 +70,27 @@ Workspace rule:
 
 Do not leave project work in scratch workspace if files must be read from repo.
 
+## Stacking
+
+Run when a parent card is `done` and its child is about to start (until the plugin hook does it automatically). `<repo>` = board `default_workdir`; branches default to `wt/<task-id>`.
+
+```bash
+# one parent
+git -C <repo> branch wt/<child> wt/<parent>
+# several parents: base on the first, merge the rest
+git -C <repo> branch wt/<child> wt/<parent-1>
+git -C <repo> worktree add <repo>/.worktrees/<child> wt/<child>
+git -C <repo>/.worktrees/<child> merge --no-ff wt/<parent-2>   # conflict: merge --abort, block child needs_input
+hermes kanban --board <board> comment <child> "[ginflow-stack] base=<parent branches> head=<sha>"
+hermes kanban --board <board> unblock <child> --reason "stacked on <parent branches>"
+```
+
+- Hermes reuses an existing `wt/<child>` branch or worktree instead of cutting from `HEAD`.
+- Skip when the child is already `running`/`done` or its branch exists.
+- Child PR: one open parent PR → base `wt/<parent>`; several → base target, body `Merge after: <parent PR URLs>`. Until the plugin does it, publish opens against `ginflow.publish.target`; fix right after: `gh pr edit <child-pr> --base wt/<parent>` (one parent) or add `Merge after:` with `gh pr edit --body` (several).
+- After a parent PR merges, retarget children still based on its branch: `gh pr edit <child-pr> --base <target>`.
+- Stale local target branch: `git -C <repo> fetch` then fast-forward only when clean; never reset or force.
+
 ## Feedback boundary
 
 Notification transport remains adapter-owned.
