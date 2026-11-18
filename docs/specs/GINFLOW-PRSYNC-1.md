@@ -1,5 +1,5 @@
 ---
-status: draft
+status: completed
 scope: PR-sync integration test runtime isolation
 owner: cindy
 ---
