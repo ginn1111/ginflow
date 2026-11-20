@@ -24,6 +24,7 @@ def _load(name: str):
 pc = _load("project_config")
 publish = _load("publish")
 core = _load("harness_core")
+sc = _load("spec_cards")
 
 
 def run(argv: list[str], cwd: Path | None = None) -> subprocess.CompletedProcess:
@@ -339,6 +340,162 @@ def pr_sync(args) -> int:
     return PrSync(args.board or (pc.configured_context(repo)["board"] if ok else None), repo).run()
 
 
+class CardsCreate:
+    """`ginflow cards create`: committed spec/plan pairs become linked, idempotent cards (CLOUD-1.4)."""
+
+    def __init__(self, board: str | None, repo: Path) -> None:
+        self.board, self.repo, self.problems = board, repo, []
+
+    def fail(self, where, reason: str) -> None:
+        self.problems.append(f"fail {where}: {reason}")
+
+    def kb(self, *args: str):
+        return core.kanban_json(self.board, *args)
+
+    def kb_run(self, *args: str) -> str:
+        out = core.kanban_run(self.board, *args)
+        if out.returncode:
+            raise RuntimeError(f"kanban {args[0]}: {(out.stderr or out.stdout).strip()}")
+        return out.stdout
+
+    def committed(self, path: Path) -> bool:
+        rel = str(path)
+        tracked = git(self.repo, "ls-files", "--error-unmatch", "--", rel).returncode == 0
+        return tracked and not git(self.repo, "status", "--porcelain", "--", rel).stdout.strip()
+
+    def existing(self) -> dict[str, dict]:
+        """Non-archived board cards by Card key (title prefix `<KEY> — `)."""
+        cards = {}
+        for task in self.kb("list", "--json"):
+            title = str(task.get("title", ""))
+            key = title.split(" — ", 1)[0]
+            if " — " in title and sc.KEY.match(key):
+                cards.setdefault(key, task)
+        return cards
+
+    def preflight(self, files: list[str]) -> tuple[list[dict], dict[str, dict]]:
+        if not self.board:
+            self.fail("board", "no board: pass --board, set HERMES_KANBAN_BOARD, or run `ginflow init`")
+            return [], {}
+        out = run(["hermes", "kanban", "boards", "list", "--json"])
+        try:
+            info = {b["slug"]: b for b in json.loads(out.stdout)}.get(self.board)
+        except (ValueError, KeyError, TypeError):
+            info = None
+        if info is None:
+            self.fail("board", f"board {self.board} does not exist")
+            return [], {}
+        if not info.get("default_workdir"):
+            self.fail("board", f"board {self.board} has no default_workdir; run `ginflow init`")
+            return [], {}
+        specs, seen = [], {}
+        profiles = pc.installed_profiles()
+        for name in files:
+            path = Path(name).expanduser().resolve()
+            try:
+                spec = sc.load_spec(path, self.repo)
+            except sc.SpecError as exc:
+                self.fail(name, str(exc))
+                continue
+            if spec["key"] in seen:
+                self.fail(name, f"duplicate card {spec['key']} (also {seen[spec['key']]})")
+                continue
+            seen[spec["key"]] = name
+            if spec["assignee"] not in profiles:
+                self.fail(name, f"assignee {spec['assignee']!r} is not an installed Hermes profile")
+            if not spec["plan_path"].is_file():
+                self.fail(name, f"missing plan {spec['plan_rel']}")
+            for p in (path, spec["plan_path"]):
+                if p.is_file() and not self.committed(p):
+                    self.fail(name, f"{p.name} is not committed (or has uncommitted changes)")
+            specs.append(spec)
+        existing = {}
+        try:
+            existing = self.existing()
+        except (RuntimeError, ValueError) as exc:
+            self.fail("board", str(exc))
+        try:
+            ordered = sc.order(specs, set(existing))
+        except sc.SpecError as exc:
+            self.fail("specs", str(exc))
+            ordered = specs
+        return ordered, existing
+
+    def create(self, spec: dict) -> str:
+        body = sc.body_text(spec)
+        fields = core.parse_card_body(body)
+        if not (fields["objective"] and fields["scope"] and fields["acceptance"] and fields["links"]):
+            raise RuntimeError(f"{spec['key']}: body does not round-trip through parse_card_body")
+        args = ["create", spec["title"], "--body", body, "--assignee", spec["assignee"], "--workspace", "worktree",
+                "--initial-status", "blocked", "--idempotency-key", sc.idempotency_key(spec, self.board), "--json"]
+        return json.loads(self.kb_run(*args))["id"]
+
+    def harness(self, tid: str) -> str | None:
+        """None when the candidate check passes, else the failed check."""
+        script = Path(__file__).resolve().parent / "validate-harness.py"
+        out = run([sys.executable, str(script), "--target", str(self.repo), "--board", self.board,
+                   "--kanban-task-id", tid, "--json"])
+        try:
+            data = json.loads(out.stdout)
+        except ValueError:
+            return "harness unavailable"
+        if data.get("status") != "blocker":
+            return None
+        for name, sub in data["subsystems"].items():
+            for row in sub.get("checks", []):
+                if not row.get("pass") and row.get("severity") == "blocker":
+                    return f"{name}: {row.get('message')}"
+        return "harness blocker"
+
+    def run(self, files: list[str]) -> int:
+        ordered, existing = self.preflight(files)
+        if self.problems:
+            print("\n".join(self.problems))
+            return 1
+        ids = {k: t["id"] for k, t in existing.items()}
+        result, new = [], []
+        try:
+            for spec in ordered:
+                key, is_new = spec["key"], spec["key"] not in existing
+                if is_new:
+                    ids[key] = self.create(spec)
+                    new.append(spec)
+                result.append({"key": key, "id": ids[key], "status": None, "parents": [], "created": is_new})
+            for spec, row in zip(ordered, result):
+                have = set(self.kb("show", row["id"], "--json").get("parents") or [])
+                for b in spec["blocked_by"]:
+                    if ids[b] not in have:
+                        self.kb_run("link", ids[b], row["id"])
+            for spec in new:
+                tid = ids[spec["key"]]
+                failed = self.harness(tid)
+                if failed:
+                    self.kb_run("comment", tid, f"[ginflow] cards create: left blocked, {failed}")
+                else:
+                    self.kb_run("unblock", tid)
+            for row in result:
+                data = self.kb("show", row["id"], "--json")
+                row["status"], row["parents"] = data["task"]["status"], list(data.get("parents") or [])
+        except (RuntimeError, ValueError, KeyError) as exc:
+            print(f"fail cards: {exc}")
+            print(json.dumps(result, indent=2))
+            return 1
+        print(json.dumps(result, indent=2))
+        return 0
+
+
+def cards_create(args) -> int:
+    top = git(Path(args.project).expanduser().resolve(), "rev-parse", "--show-toplevel")
+    if top.returncode:
+        print(f"fail context: {args.project} is not a git repository")
+        return 1
+    repo = Path(top.stdout.strip()).resolve()
+    if pc.config_exists(repo) and pc.context_error(repo):
+        print(f"fail context: {pc.context_error(repo)}")
+        return 1
+    return CardsCreate(pc.resolve_board(repo, args.board), repo).run(args.specs)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="ginflow")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -352,7 +509,14 @@ def main(argv: list[str] | None = None) -> int:
     sync = pr.add_parser("sync", help="turn new PR review comments into follow-up cards")
     sync.add_argument("--project", default=".")
     sync.add_argument("--board")
+    cards = sub.add_parser("cards", help="card commands").add_subparsers(dest="cards_command", required=True)
+    create = cards.add_parser("create", help="create linked cards from committed spec/plan pairs")
+    create.add_argument("--project", default=".")
+    create.add_argument("--board")
+    create.add_argument("specs", nargs="+", metavar="SPEC")
     args = parser.parse_args(argv)
+    if args.command == "cards":
+        return cards_create(args)
     return pr_sync(args) if args.command == "pr" else Init().run(args)
 
 
