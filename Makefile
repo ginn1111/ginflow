@@ -55,6 +55,7 @@ lifecycle-test:
 	python3 skills/ginflow/scripts/test-worktree-context.py
 	python3 skills/ginflow/scripts/test-ginflow-init.py
 	python3 skills/ginflow/scripts/test-ginflow-pr-sync.py
+	python3 skills/ginflow/scripts/test-ginflow-gh-token.py
 
 install-test:
 	bash scripts/test-install.sh
