@@ -75,8 +75,32 @@ class ContextInitializationError(ValueError):
     """Raised when first-use context cannot be resolved safely."""
 
 
+def _main_checkout(path: Path) -> Path | None:
+    """Main checkout root when ``path`` is inside a linked git worktree, else None."""
+    try:
+        out = subprocess.run(
+            ["git", "-C", str(path), "rev-parse", "--path-format=absolute", "--show-toplevel", "--git-common-dir"],
+            text=True, capture_output=True, timeout=5,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    lines = out.stdout.splitlines()
+    if out.returncode != 0 or len(lines) != 2:
+        return None
+    toplevel, common = Path(lines[0]).resolve(), Path(lines[1]).resolve()
+    if common.name != ".git" or common.parent == toplevel:
+        return None
+    return common.parent
+
+
 def config_path(workspace: Path) -> Path:
-    return Path(workspace).expanduser().resolve() / CONFIG_RELATIVE_PATH
+    """Config file: ``W/.ginflow.yaml`` if present, else the main checkout's when W is a linked worktree."""
+    base = Path(workspace).expanduser().resolve()
+    own = base / CONFIG_RELATIVE_PATH
+    if own.exists():
+        return own
+    main = _main_checkout(base) if base.is_dir() else None
+    return main / CONFIG_RELATIVE_PATH if main else own
 
 
 def config_exists(workspace: Path) -> bool:
@@ -448,7 +472,7 @@ def persist_context(workspace: Path, *, board: str | None) -> Path | None:
     if path.exists():
         return None
     path.parent.mkdir(parents=True, exist_ok=True)
-    payload = {"ginflow": {"board": board, "workspace": str(workspace)}}
+    payload = {"ginflow": {"board": board, "workspace": str(path.parent)}}
     temporary = path.with_name(path.name + ".tmp")
     try:
         temporary.write_text(_dumps(payload), encoding="utf-8")
