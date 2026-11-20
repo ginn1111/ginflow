@@ -97,6 +97,14 @@ Regenerate evidence: `grep -rnw <name> plugins skills/ginflow scripts --include=
 | publish.py | `build_auth_argv` | [x] gate publish | [ ] | [x] |
 | publish.py | `parse_existing_url` | [x] gate publish | [ ] | [x] |
 | publish.py | `parse_created_url` | [x] gate publish | [ ] | [x] |
+| gh_app.py | `api_base` | [x] ginflow gh token | [x] | [x] |
+| gh_app.py | `cache_dir` | [x] ginflow gh token | [x] | [x] |
+| gh_app.py | `app_jwt` | [x] ginflow gh token | [ ] | [x] |
+| gh_app.py | `installation_for_repo` | [x] ginflow gh token | [ ] | [x] |
+| gh_app.py | `installation_token` | [x] ginflow gh token | [ ] | [x] |
+| gh_app.py | `resolve_token` | [x] ginflow gh token | [ ] | [x] |
+| gh_app.py | `credential` | [x] ginflow gh token credential | [x] | [x] |
+| gh_app.py | `main` | [x] ginflow gh token | [ ] | [x] |
 | routing.py | `workspace` | [x] harness CLI / gate / routing | [x] | [x] |
 | routing.py | `route` | [x] harness CLI / gate / routing | [x] | [x] |
 
@@ -105,4 +113,5 @@ Regenerate evidence: `grep -rnw <name> plugins skills/ginflow scripts --include=
 - Wired: routing context, block guard, block routing with recovery policy and feedback (`blocker_reporting`, `recovery_policy`, `feedback`), completion gate, publish, trace, core harness/routing/publish primitives, config readers (board, context, reviewer, publish, notify).
 - Wired via `ginflow init` (`skills/ginflow/scripts/ginflow.py`, tested by `test-ginflow-init.py`): `initialize_context`, `persist_context`, `persist_worker_defaults`, `persist_reviewer`, `configured_worker`, `worker_error`, `resolve_worker_dispatch`, `hermes_default_reviewer`, `seed_default_reviewer`.
 - Wired via `ginflow pr sync` (`skills/ginflow/scripts/ginflow.py`, tested by `test-ginflow-pr-sync.py`): PR feedback becomes a follow-up card (PRFB-1). `publish.publish` also comments `[ginflow] updated <sha> by <KEY>` on an existing PR (tested by `test_publish_hook.py`).
+- Wired via `ginflow gh token` (`skills/ginflow/scripts/ginflow.py`, tested by `test-ginflow-gh-token.py`, guide `docs/guides/github-app.md`): GitHub App installation tokens and git credential helper (CLOUD-1.3); functions in `gh_app.py`.
 - Every plugin test file runs under `make test` (`test_native_review_transition.py`, `test_block_routing.py` and the trace integration test skip when the `hermes` CLI is missing).
