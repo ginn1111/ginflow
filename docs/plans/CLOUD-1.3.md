@@ -16,7 +16,7 @@ Content rules: `references/artifact-content-guide.md` in `ginflow`. RED test fir
 ## Step 2: mint and cache (B1–B3, B5)
 - New `skills/ginflow/lib/gh_app.py`: `app_jwt`, `installation_for_repo`, `installation_token` (cache read/write, 300 s margin).
 - `ginflow gh token` subcommand in `skills/ginflow/scripts/ginflow.py`.
-- Verify: token, cache reuse, re-mint, repo lookup, missing key, 401, file modes.
+- Verify: token, cache reuse, re-mint, repo lookup, multiple repos across two installations, ungranted repo, stale mapping, missing key, 401, file modes.
 
 ## Step 3: credential helper (B4)
 - `ginflow gh token credential get|store|erase`.
