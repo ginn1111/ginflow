@@ -1,5 +1,5 @@
 ---
-status: draft
+status: approved
 card: CLOUD-1.1
 scope: see spec
 owner: ginb
