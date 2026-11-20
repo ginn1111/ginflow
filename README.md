@@ -52,6 +52,8 @@ echo .hermes.md >> .git/info/exclude
 
 Set the project's canonical verification command in `.hermes.md`, open Hermes there, and run `/ginflow`. It creates `.ginflow.yaml` and walks shape → cards → execute → review → PR. Workers finish with `kanban_request_review`; `ginflow-gate` validates evidence there and at `kanban_complete`.
 
+`.ginflow.yaml` is local per clone: `ginflow init` git-excludes it (via `.git/info/exclude`) and card worktrees read the main checkout's copy. Never commit it.
+
 Minimal `.ginflow.yaml` (written for you; shown for reference):
 
 ```yaml

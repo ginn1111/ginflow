@@ -100,6 +100,27 @@ class Init:
         self.say("set", "context", f"wrote .ginflow.yaml with board {name}")
         return name
 
+    def exclude(self, repo: Path) -> None:
+        """Keep `.ginflow.yaml` and `.hermes.md` out of git via info/exclude; never touch `.gitignore`."""
+        names = (".ginflow.yaml", ".hermes.md")
+        if git(repo, "ls-files", "--error-unmatch", ".ginflow.yaml").returncode == 0:
+            return self.say("fail", "exclude", ".ginflow.yaml is tracked; run git rm --cached .ginflow.yaml")
+        common = git(repo, "rev-parse", "--path-format=absolute", "--git-common-dir")
+        if common.returncode != 0:
+            return self.say("fail", "exclude", "cannot resolve git common dir")
+        path = Path(common.stdout.strip()) / "info" / "exclude"
+        try:
+            text = path.read_text(encoding="utf-8") if path.exists() else ""
+            present = {line.strip().lstrip("/") for line in text.splitlines()}
+            missing = [n for n in names if n not in present]
+            if missing:
+                path.parent.mkdir(parents=True, exist_ok=True)
+                prefix = "" if not text or text.endswith("\n") else "\n"
+                path.write_text(text + prefix + "".join(f"{n}\n" for n in missing), encoding="utf-8")
+        except OSError as exc:
+            return self.say("fail", "exclude", str(exc))
+        self.say("set" if missing else "ok", "exclude", f"added {' '.join(missing)}" if missing else "present")
+
     def workdir(self, board: str, repo: Path) -> None:
         state = self.workdir_state(board, repo)
         if state == "ok":
@@ -188,6 +209,8 @@ class Init:
             return 1
         repo = Path(top.stdout.strip()).resolve()
         board = self.context(repo, args)
+        if board is not None and not self.failed:
+            self.exclude(repo)
         if board is not None and not self.failed:
             self.workdir(board, repo)
         if not self.failed:  # nothing is rewritten after a failed context/workdir

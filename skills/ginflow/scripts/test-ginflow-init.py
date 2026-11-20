@@ -77,6 +77,11 @@ code, lines = init("--project", str(repo))
 assert code == 0 and all(l.startswith("ok ") for l in lines), lines
 assert (repo / ".ginflow.yaml").read_text() == cfg and (HOME / "config.yaml").read_text() == hermes_cfg
 
+# exclude: both names ignored, clean status
+excl = (repo / ".git/info/exclude").read_text().split()
+assert ".ginflow.yaml" in excl and ".hermes.md" in excl, excl
+assert git(repo, "status", "--short").stdout == "", git(repo, "status", "--short").stdout
+
 # behind origin
 other = TMP / "other"
 git(TMP, "clone", "-q", str(origin), str(other))
@@ -98,6 +103,16 @@ repo3, _ = make_project("proj3")
 code, lines = init("--project", str(repo3))
 assert code == 1 and any(l.startswith("fail context") for l in lines), lines
 assert not (repo3 / ".ginflow.yaml").exists()
+
+# repo tracking .ginflow.yaml: fail exclude, index unchanged
+repo4, _ = make_project("proj4")
+(repo4 / ".ginflow.yaml").write_text(f"ginflow:\n  board: bd\n  workspace: {repo4}\n")
+git(repo4, "add", ".ginflow.yaml")
+before = git(repo4, "ls-files", "-s").stdout
+code, lines = init("--project", str(repo4))
+assert code == 1 and any(l.startswith("fail exclude: .ginflow.yaml is tracked") for l in lines), lines
+assert git(repo4, "ls-files", "-s").stdout == before
+assert not (repo4 / ".git/info/exclude").read_text().count(".hermes.md")
 
 shutil.rmtree(TMP, ignore_errors=True)
 print("PASS: ginflow init")
