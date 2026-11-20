@@ -69,7 +69,7 @@ The agent run then takes the Repository lock and calls `ginflow repo ensure` bef
 Rules:
 
 - Re-shaping an Issue continues card numbering (`.4`, `.5`); completed cards' artifacts are never edited.
-- Card body `Links:` carries `- issue: <owner>/<repo>#<n>`; the gate reads it to find the Issue.
+- Card body `Links:` carries the Issue URL `https://github.com/<owner>/<repo>/issues/<n>` (the harness ignores `://` links and rejects other non-`docs/` links); the gate reads it to find the Issue.
 - Card creation uses `--idempotency-key gh:<owner>/<repo>#<n>:<CARD-KEY>`.
 - Bot comments are prefixed `[ginflow]`; the bot identity is the authoritative loop filter.
 - Merge stays with Gin. Branch protection on the default branch blocks the bot from merging.
