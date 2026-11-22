@@ -1,5 +1,5 @@
 ---
-status: approved
+status: completed
 card: CLOUD-1.4
 assignee: ginb
 blocked_by: []

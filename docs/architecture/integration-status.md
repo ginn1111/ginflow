@@ -107,6 +107,16 @@ Regenerate evidence: `grep -rnw <name> plugins skills/ginflow scripts --include=
 | gh_app.py | `main` | [x] ginflow gh token | [ ] | [x] |
 | routing.py | `workspace` | [x] harness CLI / gate / routing | [x] | [x] |
 | routing.py | `route` | [x] harness CLI / gate / routing | [x] | [x] |
+| spec_cards.py | `front_matter` | [x] ginflow cards create | [x] | [x] |
+| spec_cards.py | `split_top` | [x] ginflow cards create | [x] | [x] |
+| spec_cards.py | `section` | [x] ginflow cards create | [x] | [x] |
+| spec_cards.py | `first_sentence` | [x] ginflow cards create | [x] | [x] |
+| spec_cards.py | `parse_issue` | [x] ginflow cards create | [x] | [x] |
+| spec_cards.py | `load_spec` | [x] ginflow cards create | [x] | [x] |
+| spec_cards.py | `links` | [x] ginflow cards create | [x] | [x] |
+| spec_cards.py | `body_text` | [x] ginflow cards create | [x] | [x] |
+| spec_cards.py | `idempotency_key` | [x] ginflow cards create | [x] | [x] |
+| spec_cards.py | `order` | [x] ginflow cards create | [x] | [x] |
 
 ## Summary
 
@@ -114,4 +124,5 @@ Regenerate evidence: `grep -rnw <name> plugins skills/ginflow scripts --include=
 - Wired via `ginflow init` (`skills/ginflow/scripts/ginflow.py`, tested by `test-ginflow-init.py`): `initialize_context`, `persist_context`, `persist_worker_defaults`, `persist_reviewer`, `configured_worker`, `worker_error`, `resolve_worker_dispatch`, `hermes_default_reviewer`, `seed_default_reviewer`.
 - Wired via `ginflow pr sync` (`skills/ginflow/scripts/ginflow.py`, tested by `test-ginflow-pr-sync.py`): PR feedback becomes a follow-up card (PRFB-1). `publish.publish` also comments `[ginflow] updated <sha> by <KEY>` on an existing PR (tested by `test_publish_hook.py`).
 - Wired via `ginflow gh token` (`skills/ginflow/scripts/ginflow.py`, tested by `test-ginflow-gh-token.py`, guide `docs/guides/github-app.md`): GitHub App installation tokens and git credential helper (CLOUD-1.3); functions in `gh_app.py`.
+- Wired via `ginflow cards create` (`skills/ginflow/scripts/ginflow.py`, tested by `test-ginflow-cards.py`): spec/plan front matter becomes linked, idempotent cards (CLOUD-1.4); all `spec_cards.py` functions.
 - Every plugin test file runs under `make test` (`test_native_review_transition.py`, `test_block_routing.py` and the trace integration test skip when the `hermes` CLI is missing).
