@@ -56,6 +56,27 @@ def _records(root: Path, filename: str) -> list[dict]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def _wait_for_home_writers(home, timeout):
+    """Wait until no process whose environment points into `home` is still running."""
+    needle = str(home).encode()
+    me = os.getpid()
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        busy = False
+        for entry in Path("/proc").glob("[0-9]*"):
+            if int(entry.name) == me:
+                continue
+            try:
+                if needle in (entry / "environ").read_bytes():
+                    busy = True
+                    break
+            except OSError:
+                continue
+        if not busy:
+            return
+        time.sleep(0.2)
+
+
 @contextlib.contextmanager
 def _temp_hermes_home(prefix):
     """Remove temp home safely despite a late Hermes cache writer.
@@ -64,8 +85,10 @@ def _temp_hermes_home(prefix):
     a detached `python -I -c ... runpy.run_module('hermes_cli.default_plugins')`
     child via default_plugins.spawn_install. Its failure path calls
     memory_provider_migration._note_failure and recreates
-    <home>/cache/left-core-default-plugins.failed after the CLI returns. Tests set
-    HERMES_DISABLE_LAZY_INSTALLS=1 to prevent that child; bounded retry is a backstop.
+    <home>/cache/left-core-default-plugins.failed after the CLI returns. HERMES_DISABLE_LAZY_INSTALLS=1
+    cannot be used (fresh-home `hermes kanban init` then refuses to start), so wait
+    for processes whose environment points into the home to exit before rmtree;
+    bounded retry is a backstop.
     Body failures are never masked by cleanup failures.
     """
     home = tempfile.mkdtemp(prefix=prefix)
@@ -76,6 +99,7 @@ def _temp_hermes_home(prefix):
         failed = True
         raise
     finally:
+        _wait_for_home_writers(home, 120.0)
         deadline = time.monotonic() + 5.0
         while True:
             try:
@@ -111,7 +135,7 @@ def test_full_kanban_lifecycle_traced():
         profile_home = Path(home) / "profiles" / "test"
         profile_home.mkdir(parents=True)
         env = os.environ | {
-            "HERMES_DISABLE_LAZY_INSTALLS": "1", "HERMES_HOME": str(profile_home),
+            "HERMES_HOME": str(profile_home),
             "HERMES_KANBAN_HOME": str(Path(home) / "kanban-home"),
             "HERMES_KANBAN_BOARD": TEST_BOARD,
         }
