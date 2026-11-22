@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """Test ginflow-gate routing and registration behavior."""
 
+import contextlib
 import importlib
 import json
 import os
 import shutil
 import subprocess
 import tempfile
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -205,6 +207,65 @@ def test_old_version_metadata_does_not_change_guidance():
     print("PASS: version metadata does not change routing guidance")
 
 
+def _wait_for_home_writers(home, timeout):
+    """Wait until no process whose environment points into `home` is still running."""
+    needle = str(home).encode()
+    me = os.getpid()
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        busy = False
+        for entry in Path("/proc").glob("[0-9]*"):
+            if int(entry.name) == me:
+                continue
+            try:
+                if needle in (entry / "environ").read_bytes():
+                    busy = True
+                    break
+            except OSError:
+                continue
+        if not busy:
+            return
+        time.sleep(0.2)
+
+
+@contextlib.contextmanager
+def _temp_hermes_home(prefix):
+    """Remove temp home safely despite a late Hermes cache writer.
+
+    Root cause: fresh-home boot runs step_install_default_plugins, which launches
+    a detached `python -I -c ... runpy.run_module('hermes_cli.default_plugins')`
+    child via default_plugins.spawn_install. Its failure path calls
+    memory_provider_migration._note_failure and recreates
+    <home>/cache/left-core-default-plugins.failed after the CLI returns. HERMES_DISABLE_LAZY_INSTALLS=1
+    cannot be used (fresh-home `hermes kanban init` then refuses to start), so wait
+    for processes whose environment points into the home to exit before rmtree;
+    bounded retry is a backstop.
+    Body failures are never masked by cleanup failures.
+    """
+    home = tempfile.mkdtemp(prefix=prefix)
+    failed = False
+    try:
+        yield home
+    except BaseException:
+        failed = True
+        raise
+    finally:
+        _wait_for_home_writers(home, 120.0)
+        deadline = time.monotonic() + 5.0
+        while True:
+            try:
+                shutil.rmtree(home)
+                break
+            except FileNotFoundError:
+                break
+            except OSError as exc:
+                if time.monotonic() >= deadline:
+                    if not failed:
+                        raise OSError(f"could not remove temp Hermes home {home}: {exc}") from exc
+                    break
+                time.sleep(0.1)
+
+
 def test_live_tmp_project_card():
     """Create a real temporary Kanban card and route it from its workspace."""
     body = (
@@ -213,7 +274,7 @@ def test_live_tmp_project_card():
         "Acceptance:\n- route blocked card\n"
         "Links:\n- docs/specs/TMP-1.md"
     )
-    with tempfile.TemporaryDirectory(prefix="ginflow-gate-project-") as project, tempfile.TemporaryDirectory(prefix="ginflow-gate-home-") as home:
+    with tempfile.TemporaryDirectory(prefix="ginflow-gate-project-") as project, _temp_hermes_home("ginflow-gate-home-") as home:
         target = Path(project)
         (target / "docs/specs").mkdir(parents=True)
         (target / "docs/specs/TMP-1.md").write_text("# Temporary brief\n")
@@ -252,7 +313,7 @@ def test_live_tmp_next_card_docs():
         "Acceptance:\n- validate docs\n"
         "Links:\n- docs/specs/TMP-2.md"
     )
-    with tempfile.TemporaryDirectory(prefix="ginflow-gate-project-") as project, tempfile.TemporaryDirectory(prefix="ginflow-gate-home-") as home:
+    with tempfile.TemporaryDirectory(prefix="ginflow-gate-project-") as project, _temp_hermes_home("ginflow-gate-home-") as home:
         target = Path(project)
         (target / "docs/specs").mkdir(parents=True)
         (target / "docs/specs/TMP-2.md").write_text("# Temporary brief\n")
