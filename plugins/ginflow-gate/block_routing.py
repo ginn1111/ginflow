@@ -1,9 +1,4 @@
-"""Push critical worker blocks to ginflow.notify.target via `hermes send`.
-
-Observer-only kanban_task_blocked hook. Any failure is swallowed so the block
-transition is never affected. Destination chain: notify.target, else the task's
-native notify subscription, else (or on push failure) a card comment.
-"""
+"""Notify the configured destination for actionable Kanban blocks."""
 from __future__ import annotations
 
 import json
@@ -19,7 +14,7 @@ _REQUIRED_ACTION = re.compile(r"(?im)^\s*required_action:[ \t]*(\S.*)$")
 MAX_BODY = 800
 logger = logging.getLogger(__name__)
 
-from . import blocker_reporting, feedback, recovery_policy, skill_lib
+from . import alert_outbox, blocker_reporting, feedback, recovery_policy, skill_lib
 from .card_id import selected_task_id
 from .trace_adapter import trace
 _config = skill_lib.load("project_config")
@@ -31,12 +26,9 @@ def _sanitize(text: object) -> str:
     return re.sub(r"\s+", " ", text).strip()[:MAX_BODY]
 
 
-def _trace_on(workspace: Path) -> bool:
-    flag = os.environ.get("GINFLOW_LOG")
-    if flag is not None:
-        return flag == "1"
-    context = _config.load_config(workspace).get("ginflow")
-    return isinstance(context, dict) and context.get("trace") is True
+def _telegram_home() -> str | None:
+    """Use Hermes' Telegram home-channel alias; no Ginflow credentials are stored."""
+    return "telegram"
 
 
 def _load_task(task_id: str, board: str | None) -> dict:
@@ -110,7 +102,7 @@ def guard_block(args: dict, task_id: str = "", **_: object) -> dict | None:
         selected = selected_task_id(args, task_id)
         board = args.get("board") or os.environ.get("HERMES_KANBAN_BOARD")
         workspace = str(_load_task(selected, board).get("workspace_path") or "")
-        if not workspace or not _trace_on(Path(workspace)):
+        if not workspace:
             return None
     except Exception as exc:
         logger.warning("ginflow block guard inactive: %s", exc)
@@ -130,10 +122,11 @@ def build_message(task_id: str, reason: object, profile: object, run_id: object)
     match = _REQUIRED_ACTION.search(str(reason or ""))
     action = _sanitize(match.group(1)) if match else ""
     reason = _sanitize(reason) or "(no reason given)"
-    return _sanitize(
-        f"Ginflow block: task {task_id} needs a human. Reason: {reason}. "
-        f"Required action: {action or reason}. Worker: {_sanitize(profile) or 'unknown'}. Run: {run_id}."
-    )
+    fixability = "No" if action else "Unknown"
+    card_link = ""
+    first = _sanitize(f"[HIGH] {task_id} blocked — {reason}. Agent can fix: {fixability}. {card_link}")
+    second = _sanitize(f"Your action: {action or 'Provide the missing information so the next step can be decided.'}")
+    return f"{first}\n{second}"
 
 
 def _processed_keys(task: dict) -> set[str]:
@@ -151,11 +144,9 @@ def on_task_blocked(task_id: str = "", board: str | None = None, assignee: str |
         task = _load_task(task_id, board)
         workspace = str(task.get("workspace_path") or "")
         kind = task.get("block_kind")
-        if not workspace or kind in (None, "dependency"):  # untyped blocks stay native (guard rejects them when trace on)
+        if not workspace or kind in (None, "dependency"):
             return
         path = Path(workspace)
-        if not _trace_on(path):
-            return
         error = _config.context_error(path)
         if error:
             logger.warning("ginflow block routing: invalid project config route: %s", error)
@@ -181,20 +172,26 @@ def on_task_blocked(task_id: str = "", board: str | None = None, assignee: str |
         _feedback(task_id, event["event_id"], decision, status)
         if decision.action == "reassign":
             _reassign(task_id, board, event, str(decision.target_assignee))
-            return
+            refreshed = _load_task(task_id, board)
+            if refreshed.get("assignee") == str(decision.target_assignee) and refreshed.get("status") not in ("blocked", "triage"):
+                return
+            decision = recovery_policy.RecoveryDecision("notify_human", "reassign_failed", decision.recurrences)
+
         if not (decision.action == "notify_human" or decision.reason == "malformed_safety_state"):
             logger.info("ginflow block routing: %s/%s", decision.action, decision.reason)
             return
         target = _config.configured_notify_target(path)
         message = build_message(task_id, reason, worker, run_id)
-        try:
-            destination = target or _native_destination(task_id, board)
-        except Exception as exc:
-            logger.warning("ginflow block routing: subscription lookup failed: %s", exc)
-            destination = None
-        if destination and _push(destination, message, reviewer):
-            return
-        _comment(task_id, board, f"[ginflow] {'push failed' if destination else 'no notify destination'}: {message}")
+        destinations = [target] if target else []
+        home = _telegram_home()
+        if home and home not in destinations:
+            destinations.append(home)
+        def deliver(text: str) -> bool:
+            return any(_push(destination, text, reviewer) for destination in destinations)
+        if board:
+            alert_outbox.enqueue(str(board), task_id, str(decision.reason), message, deliver)
+        elif not deliver(message):
+            _comment(task_id, board, f"[ginflow] {'push failed' if destinations else 'no notify destination'}: {message}")
     except Exception as exc:  # observer-only: never break the block transition
         logger.warning("ginflow block routing failed: %s", exc)
 
