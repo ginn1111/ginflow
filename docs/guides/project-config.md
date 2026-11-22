@@ -2,6 +2,8 @@
 
 Each target project keeps optional Ginflow context in `.ginflow.yaml` at its repository root. The `/ginflow` skill creates it on first load; do not hand-write it unless repairing.
 
+The file holds this machine's absolute path, so it is local state per clone: never commit it. `ginflow init` adds `.ginflow.yaml` and `.hermes.md` to `.git/info/exclude` (and fails with `fail exclude: ...` if the repo already tracks the file; run `git rm --cached .ginflow.yaml`). Card worktrees (`.worktrees/<task-id>`) share the clone's file: lookup uses `<workspace>/.ginflow.yaml` when present, otherwise the main checkout's, and writers update that same file.
+
 ```yaml
 ginflow:
   board: <Kanban board slug>
