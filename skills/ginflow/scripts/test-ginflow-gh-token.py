@@ -168,7 +168,8 @@ check("stale mapping re-resolved", rc == 0 and out == "tok-7-1\n"
 # credential helper
 reset()
 rc, out, _ = cli("credential", "get", stdin="protocol=https\nhost=github.com\npath=o/r.git\n\n")
-check("credential get", rc == 0 and out == "username=x-access-token\npassword=tok-7-1\n", out)
+expected_token = "tok-7-1"
+check("credential get", rc == 0 and out == f"username=x-access-token\npassword={expected_token}\n", out)
 hits = len(STATE["hits"])
 rc, out, _ = cli("credential", "get", stdin="protocol=https\nhost=example.com\npath=o/r.git\n\n")
 check("other host prints nothing", rc == 0 and out == "" and len(STATE["hits"]) == hits)
