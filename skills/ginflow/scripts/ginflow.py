@@ -24,6 +24,7 @@ def _load(name: str):
 pc = _load("project_config")
 publish = _load("publish")
 core = _load("harness_core")
+gh_app = _load("gh_app")
 sc = _load("spec_cards")
 
 
@@ -532,12 +533,19 @@ def main(argv: list[str] | None = None) -> int:
     sync = pr.add_parser("sync", help="turn new PR review comments into follow-up cards")
     sync.add_argument("--project", default=".")
     sync.add_argument("--board")
+    gh = sub.add_parser("gh", help="GitHub App commands").add_subparsers(dest="gh_command", required=True)
+    tok = gh.add_parser("token", help="print a GitHub App installation token; `credential <op>` is a git credential helper")
+    tok.add_argument("--repo", help="OWNER/REPO")
+    tok.add_argument("--installation")
+    tok.add_argument("action", nargs="*")
     cards = sub.add_parser("cards", help="card commands").add_subparsers(dest="cards_command", required=True)
     create = cards.add_parser("create", help="create linked cards from committed spec/plan pairs")
     create.add_argument("--project", default=".")
     create.add_argument("--board")
     create.add_argument("specs", nargs="+", metavar="SPEC")
     args = parser.parse_args(argv)
+    if args.command == "gh":
+        return gh_app.main(args.repo, args.installation, args.action)
     if args.command == "cards":
         return cards_create(args)
     return pr_sync(args) if args.command == "pr" else Init().run(args)
