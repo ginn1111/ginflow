@@ -45,6 +45,7 @@ def _frontmatter_status_is_completed(text: str) -> bool:
 from .trace_adapter import trace
 from . import publish as _publish
 from . import skill_lib
+from .card_id import selected_task_id
 
 
 _core = skill_lib.load("harness_core")
@@ -141,7 +142,7 @@ def pre_tool_call(tool_name: str, args: dict, task_id: str = "", **kwargs):
     if tool_name not in VALIDATED_TOOLS:
         return None
     try:
-        selected = str(args.get("task_id") or task_id or os.environ.get("HERMES_KANBAN_TASK") or "").strip()
+        selected = selected_task_id(args, task_id)
         if not selected:
             return _block(f"{tool_name} requires task_id")
         metadata = args.get("metadata")
@@ -172,7 +173,7 @@ def pre_tool_call(tool_name: str, args: dict, task_id: str = "", **kwargs):
 def post_tool_call(tool_name: str, result: dict, args: dict, task_id: str = "", **kwargs):
     """Publish MR/PR after a reviewer kanban_complete prepared in pre_tool_call; observer only."""
     if tool_name == "kanban_complete":
-        selected = str((args or {}).get("task_id") or task_id or os.environ.get("HERMES_KANBAN_TASK") or "").strip()
+        selected = selected_task_id(args, task_id)
         try:
             _publish.finish(selected, result, kwargs)
         except Exception:

@@ -72,7 +72,7 @@ Regenerate evidence: `grep -rnw <name> plugins skills/ginflow scripts --include=
 | harness_core.py | `linked_artifacts` | [x] harness CLI / gate / routing | [ ] | [ ] |
 | harness_core.py | `startup_gate` | [x] harness CLI / gate / routing | [ ] | [x] |
 | harness_core.py | `artifact_gate` | [x] harness CLI / gate / routing | [ ] | [x] |
-| project_config.py | `config_path` | [x] harness CLI / gate / routing | [ ] | [x] |
+| project_config.py | `config_path` (worktree-aware lookup: own file, else main checkout) | [x] harness CLI / gate / routing | [ ] | [x] |
 | project_config.py | `config_exists` | [x] harness CLI / gate / routing | [ ] | [x] |
 | project_config.py | `load_config` | [x] harness CLI / gate / routing | [ ] | [x] |
 | project_config.py | `context_error` | [x] harness CLI / gate / routing | [ ] | [x] |
@@ -101,8 +101,26 @@ Regenerate evidence: `grep -rnw <name> plugins skills/ginflow scripts --include=
 | publish.py | `build_auth_argv` | [x] gate publish | [ ] | [x] |
 | publish.py | `parse_existing_url` | [x] gate publish | [ ] | [x] |
 | publish.py | `parse_created_url` | [x] gate publish | [ ] | [x] |
+| gh_app.py | `api_base` | [x] ginflow gh token | [x] | [x] |
+| gh_app.py | `cache_dir` | [x] ginflow gh token | [x] | [x] |
+| gh_app.py | `app_jwt` | [x] ginflow gh token | [ ] | [x] |
+| gh_app.py | `installation_for_repo` | [x] ginflow gh token | [ ] | [x] |
+| gh_app.py | `installation_token` | [x] ginflow gh token | [ ] | [x] |
+| gh_app.py | `resolve_token` | [x] ginflow gh token | [ ] | [x] |
+| gh_app.py | `credential` | [x] ginflow gh token credential | [x] | [x] |
+| gh_app.py | `main` | [x] ginflow gh token | [ ] | [x] |
 | routing.py | `workspace` | [x] harness CLI / gate / routing | [x] | [x] |
 | routing.py | `route` | [x] harness CLI / gate / routing | [x] | [x] |
+| spec_cards.py | `front_matter` | [x] ginflow cards create | [x] | [x] |
+| spec_cards.py | `split_top` | [x] ginflow cards create | [x] | [x] |
+| spec_cards.py | `section` | [x] ginflow cards create | [x] | [x] |
+| spec_cards.py | `first_sentence` | [x] ginflow cards create | [x] | [x] |
+| spec_cards.py | `parse_issue` | [x] ginflow cards create | [x] | [x] |
+| spec_cards.py | `load_spec` | [x] ginflow cards create | [x] | [x] |
+| spec_cards.py | `links` | [x] ginflow cards create | [x] | [x] |
+| spec_cards.py | `body_text` | [x] ginflow cards create | [x] | [x] |
+| spec_cards.py | `idempotency_key` | [x] ginflow cards create | [x] | [x] |
+| spec_cards.py | `order` | [x] ginflow cards create | [x] | [x] |
 
 ## Summary
 
@@ -110,4 +128,6 @@ Regenerate evidence: `grep -rnw <name> plugins skills/ginflow scripts --include=
 - Wired via `ginflow init` (`skills/ginflow/scripts/ginflow.py`, tested by `test-ginflow-init.py`): `initialize_context`, `persist_context`, `persist_worker_defaults`, `persist_reviewer`, `configured_worker`, `worker_error`, `resolve_worker_dispatch`, `hermes_default_reviewer`, `seed_default_reviewer`.
 - Wired via `ginflow cards create` (`skills/ginflow/scripts/ginflow.py`, tested by `test-ginflow-cards.py` and the `spec_cards.py` self-check): `front_matter`, `section`, `load_spec`, `order`.
 - Wired via `ginflow pr sync` (`skills/ginflow/scripts/ginflow.py`, tested by `test-ginflow-pr-sync.py`): PR feedback becomes a follow-up card (PRFB-1). `publish.publish` also comments `[ginflow] updated <sha> by <KEY>` on an existing PR (tested by `test_publish_hook.py`).
+- Wired via `ginflow gh token` (`skills/ginflow/scripts/ginflow.py`, tested by `test-ginflow-gh-token.py`, guide `docs/guides/github-app.md`): GitHub App installation tokens and git credential helper (CLOUD-1.3); functions in `gh_app.py`.
+- Wired via `ginflow cards create` (`skills/ginflow/scripts/ginflow.py`, tested by `test-ginflow-cards.py`): spec/plan front matter becomes linked, idempotent cards (CLOUD-1.4); all `spec_cards.py` functions.
 - Every plugin test file runs under `make test` (`test_native_review_transition.py`, `test_block_routing.py` and the trace integration test skip when the `hermes` CLI is missing).

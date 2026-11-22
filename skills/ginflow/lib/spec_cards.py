@@ -1,91 +1,176 @@
-"""Spec front matter -> Kanban card data. Stdlib only."""
+"""Spec front matter -> card data (CLOUD-1.4). Pure parsing; no Kanban or git access."""
 from __future__ import annotations
 
 import re
 from pathlib import Path
 
-KEY_RE = re.compile(r"^[A-Z][A-Z0-9]*(-[A-Z0-9]+)*-\d+$")
-SEP = " \u2014 "
+KEY = re.compile(r"^[A-Z][A-Z0-9]*(-[A-Z0-9]+)*-\d+(\.\d+)*$")
+ISSUE = re.compile(r"^([\w.-]+)/([\w.-]+)#(\d+)$")
 
 
-def front_matter(text: str) -> dict:
-    # ponytail: flat `key: value` and `[a, b]` only; use a YAML parser if specs need nesting.
-    m = re.match(r"---\n(.*?)\n---(?:\n|$)", text, re.S)
-    out: dict = {}
-    for line in (m.group(1).splitlines() if m else []):
-        k, sep, v = line.partition(":")
-        if not sep or line[:1] in " #":
+class SpecError(ValueError):
+    """A spec cannot become a card; the message is the `fail <file>:` reason."""
+
+
+def front_matter(text: str) -> tuple[dict, str]:
+    """(front matter dict, body). Front matter must start at byte 0."""
+    m = re.match(r"^---\n(.*?)\n---\n?(.*)$", text, re.S)
+    if not m:
+        raise SpecError("no YAML front matter at byte 0")
+    raw, body = m.groups()
+    try:
+        import yaml  # optional
+        data = yaml.safe_load(raw)
+        if not isinstance(data, dict):
+            raise SpecError("front matter is not a mapping")
+        return data, body
+    except ImportError:
+        pass
+    except Exception as exc:  # yaml.YAMLError and friends: fall back to the minimal parser
+        if isinstance(exc, SpecError):
+            raise
+    data = {}
+    for line in raw.splitlines():
+        if ":" not in line or line.startswith((" ", "#")):
             continue
+        k, v = line.split(":", 1)
         v = re.sub(r"\s+#.*$", "", v).strip()
-        out[k.strip()] = [i.strip() for i in v[1:-1].split(",") if i.strip()] if v.startswith("[") else v
+        if v.startswith("[") and v.endswith("]"):
+            data[k.strip()] = [x.strip().strip("'\"") for x in v[1:-1].split(",") if x.strip()]
+        else:
+            data[k.strip()] = v.strip("'\"")
+    return data, body
+
+
+def split_top(text: str) -> list[str]:
+    """Split on `, ` outside parentheses."""
+    out, depth, cur, i = [], 0, "", 0
+    while i < len(text):
+        ch = text[i]
+        depth += (ch == "(") - (ch == ")" and depth > 0)
+        if ch == "," and depth == 0 and text[i + 1:i + 2] == " ":
+            out.append(cur.strip())
+            cur, i = "", i + 2
+            continue
+        cur += ch
+        i += 1
+    out.append(cur.strip())
+    return [x for x in out if x]
+
+
+def section(body: str, name: str) -> list[str]:
+    lines, grab = [], False
+    for line in body.splitlines():
+        if line.startswith("## "):
+            grab = line[3:].strip().lower() == name.lower()
+            continue
+        if grab:
+            lines.append(line)
+    return lines
+
+
+def first_sentence(lines: list[str]) -> str:
+    fence = False
+    for line in lines:
+        if line.strip().startswith("```"):
+            fence = not fence
+            continue
+        text = re.sub(r"^\s*(?:[-*]\s+|[A-Z]\d+\.\s+)", "", line).strip()
+        if fence or not text:
+            continue
+        m = re.match(r"^(.*?[.!?])(?:\s|$)", text)
+        return (m.group(1) if m else text).strip()
+    return ""
+
+
+def parse_issue(value) -> tuple[str, str, int] | None:
+    if value in (None, ""):
+        return None
+    m = ISSUE.match(str(value))
+    if not m:
+        raise SpecError(f"issue {value!r} is not owner/repo#n")
+    return m.group(1), m.group(2), int(m.group(3))
+
+
+def load_spec(path: Path, repo: Path | None = None) -> dict:
+    """Parse one spec; raise SpecError on the first problem. `repo` makes link paths relative."""
+    path = Path(path)
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise SpecError(f"unreadable: {exc}") from exc
+    fm, body = front_matter(text)
+    key = fm.get("card")
+    if not isinstance(key, str) or not KEY.match(key):
+        raise SpecError(f"card {key!r} is missing or not a Card key")
+    assignee = fm.get("assignee")
+    if not isinstance(assignee, str) or not assignee.strip():
+        raise SpecError("assignee is missing")
+    blocked = fm.get("blocked_by") or []
+    if isinstance(blocked, str):
+        blocked = [blocked]
+    if not isinstance(blocked, list) or not all(isinstance(b, str) and KEY.match(b) for b in blocked):
+        raise SpecError(f"blocked_by {blocked!r} must be a list of Card keys")
+    issue = parse_issue(fm.get("issue"))
+    for needed in ("Problem", "Acceptance criteria"):
+        if not any(line.startswith("## ") and line[3:].strip().lower() == needed.lower() for line in body.splitlines()):
+            raise SpecError(f"missing section ## {needed}")
+    acceptance = [re.sub(r"^\[[ xX]\]\s*", "", line.strip()[2:]).strip()
+                  for line in section(body, "Acceptance criteria") if line.strip().startswith(("- ", "* "))]
+    acceptance = [a for a in acceptance if a]
+    if not acceptance:
+        raise SpecError("## Acceptance criteria has no checklist items")
+    objective = first_sentence(section(body, "Desired behavior")) or first_sentence(section(body, "Problem"))
+    if not objective:
+        raise SpecError("no text for Objective in ## Desired behavior or ## Problem")
+    scope = split_top(str(fm.get("scope") or ""))
+    if not scope:
+        raise SpecError("scope is missing")
+    h1 = next((line[2:].strip() for line in body.splitlines() if line.startswith("# ")), "")
+    title = re.sub(rf"^Spec\s+[—-]\s+(?:{re.escape(key)}:\s*)?", "", h1).strip() or key
+    root = Path(repo) if repo else path.parent.parent.parent
+    plan = root / "docs" / "plans" / f"{key}.md"
+    rel = lambda p: p.resolve().relative_to(root.resolve()).as_posix() if p.resolve().is_relative_to(root.resolve()) else str(p)
+    return {"key": key, "assignee": assignee.strip(), "blocked_by": list(blocked), "issue": issue,
+            "scope": scope, "title": f"{key} — {title}", "objective": objective, "acceptance": acceptance,
+            "spec_path": path, "plan_path": plan, "spec_rel": rel(path), "plan_rel": rel(plan)}
+
+
+def links(spec: dict) -> list[str]:
+    out = [spec["spec_rel"], spec["plan_rel"]]
+    if spec["issue"]:
+        owner, repo, n = spec["issue"]
+        out.append(f"https://github.com/{owner}/{repo}/issues/{n}")
     return out
 
 
-def section(text: str, name: str) -> str | None:
-    m = re.search(rf"^## {re.escape(name)}[ \t]*\n(.*?)(?=^## |\Z)", text, re.S | re.M)
-    return m.group(1).strip() if m else None
+def body_text(spec: dict) -> str:
+    return "\n".join([f"Objective: {spec['objective']}", "Scope:", *(f"- {x}" for x in spec["scope"]),
+                      "Acceptance:", *(f"- {x}" for x in spec["acceptance"]),
+                      "Links:", *(f"- {x}" for x in links(spec))])
 
 
-def load_spec(path: Path, root: Path) -> tuple[dict | None, list[str]]:
-    """Return (spec, problems). Spec is None when problems exist."""
-    text = path.read_text(encoding="utf-8")
-    fm, errs, name = front_matter(text), [], str(path)
-    key = fm.get("card", "")
-    if not isinstance(key, str) or not KEY_RE.match(key):
-        return None, [f"{name}: front matter `card` missing or not a valid key"]
-    plan = root / "docs" / "plans" / f"{key}.md"
-    if not plan.is_file():
-        errs.append(f"{name}: missing plan docs/plans/{key}.md")
-    if not fm.get("assignee") or not isinstance(fm["assignee"], str):
-        errs.append(f"{name}: front matter `assignee` missing")
-    blocked = fm.get("blocked_by", [])
-    if not isinstance(blocked, list):
-        errs.append(f"{name}: `blocked_by` must be a list like [KEY-1]")
-        blocked = []
-    for b in blocked:
-        if not KEY_RE.match(b):
-            errs.append(f"{name}: invalid blocked_by key {b!r}")
-    problem, desired = section(text, "Problem"), section(text, "Desired behavior")
-    acceptance = [m.group(1).strip() for m in re.finditer(r"^- \[[ xX]\]\s*(.+)$", section(text, "Acceptance criteria") or "", re.M)]
-    if not problem:
-        errs.append(f"{name}: missing ## Problem section")
-    if not acceptance:
-        errs.append(f"{name}: missing ## Acceptance criteria checklist")
-    if not fm.get("scope"):
-        errs.append(f"{name}: front matter `scope` missing")
-    if errs:
-        return None, errs
-    h1 = re.search(r"^# (.+)$", text, re.M)
-    title = re.sub(rf"^Spec\s*\u2014\s*(?:{re.escape(key)}:\s*)?", "", h1.group(1).strip()) if h1 else key
-    para = " ".join((desired or problem or "").split("\n\n")[0].split())
-    objective = re.split(r"(?<=[.!?])\s", para, maxsplit=1)[0]
-    rel = lambda p: str(p.relative_to(root))
-    links = [rel(path.resolve()), rel(plan)]
-    return {
-        "key": key, "assignee": fm["assignee"], "blocked_by": blocked, "title": f"{key}{SEP}{title}",
-        "body": "\n".join([f"Objective: {objective}", "Scope:", f"- {fm['scope']}", "Acceptance:",
-                           *[f"- {a}" for a in acceptance], "Links:", *[f"- {l}" for l in links]]),
-        "links": links,
-    }, []
+def idempotency_key(spec: dict, board: str) -> str:
+    if spec["issue"]:
+        owner, repo, n = spec["issue"]
+        return f"gh:{owner}/{repo}#{n}:{spec['key']}"
+    return f"card:{board}:{spec['key']}"
 
 
-def order(specs: dict[str, dict]) -> tuple[list[str], list[str]]:
-    """Topological key order; blocked_by keys outside `specs` are ignored. Returns (order, cycle_keys)."""
-    pending = {k: {d for d in s["blocked_by"] if d in specs} for k, s in specs.items()}
-    done: list[str] = []
+def order(specs: list[dict], existing_keys=()) -> list[dict]:
+    """Specs in dependency order. SpecError on an unknown key or a cycle."""
+    by_key = {s["key"]: s for s in specs}
+    for s in specs:
+        for b in s["blocked_by"]:
+            if b not in by_key and b not in existing_keys:
+                raise SpecError(f"{s['key']}: blocked_by {b} is not a given spec or an existing card")
+    done, result, pending = set(), [], list(specs)
     while pending:
-        ready = sorted(k for k, deps in pending.items() if not deps - set(done))
+        ready = [s for s in pending if all(b in done or b not in by_key for b in s["blocked_by"])]
         if not ready:
-            return done, sorted(pending)
-        for k in ready:
-            done.append(k)
-            del pending[k]
-    return done, []
-
-
-if __name__ == "__main__":
-    assert front_matter("---\ncard: A-1\nblocked_by: [A-0, B-2]  # x\n---\n") == {"card": "A-1", "blocked_by": ["A-0", "B-2"]}
-    mk = lambda *d: {"blocked_by": list(d)}
-    assert order({"A-1": mk(), "A-2": mk("A-1"), "A-3": mk("A-1", "A-2")}) == (["A-1", "A-2", "A-3"], [])
-    assert order({"A-1": mk("A-2"), "A-2": mk("A-1")})[1] == ["A-1", "A-2"]
-    print("PASS: spec_cards")
+            raise SpecError("dependency cycle among " + ", ".join(s["key"] for s in pending))
+        for s in ready:
+            result.append(s)
+            done.add(s["key"])
+            pending.remove(s)
+    return result
