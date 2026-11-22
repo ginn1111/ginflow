@@ -93,7 +93,7 @@ def stack_child(done_id: str, child_id: str, board: str | None) -> None:
             return
         parents.append((parent, _branch(parent)))
     repo = _repo(parents[0][0]) or _repo(child)
-    if not repo or not (repo / ".ginflow.yaml").is_file() or not all(_has(repo, b) for _, b in parents):
+    if not repo or not _config.config_exists(repo) or not all(_has(repo, b) for _, b in parents):
         return
     names = [b for _, b in parents]
     if _has(repo, _branch(child)):

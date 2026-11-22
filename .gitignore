@@ -10,3 +10,4 @@ docs/architecture/.$*.drawio.bkp
 
 # Per-task Kanban worktrees
 .worktrees/
+.ginflow.yaml
