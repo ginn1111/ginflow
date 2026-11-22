@@ -119,7 +119,7 @@ Links:
 
 Hermes stores workspace, status, assignee, ID on the task row, and `artifact_baseline` in latest completion run metadata. No shadow card JSON.
 
-Create card without dispatch race:
+From committed specs, run `ginflow cards create docs/specs/<KEY>.md ...`: it builds the cards, edges (`blocked_by`), Issue link and idempotency key, then unblocks passing cards; reruns create nothing new (`references/kanban-guide.md`). By hand, create a card without dispatch race:
 
 1. Draft card and artifacts in memory.
 2. Create card assigned to the current profile, full future links, `--initial-status blocked`. Current profile loads its configured skill; do not force `--skill ginflow`.
