@@ -1,5 +1,5 @@
 ---
-status: approved
+status: completed
 card: GATEID-1
 assignee: ginb
 blocked_by: []

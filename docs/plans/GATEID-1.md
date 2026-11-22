@@ -1,5 +1,5 @@
 ---
-status: approved
+status: completed
 card: GATEID-1
 scope: see spec
 owner: ginb

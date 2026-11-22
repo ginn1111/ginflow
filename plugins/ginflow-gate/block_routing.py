@@ -20,6 +20,7 @@ MAX_BODY = 800
 logger = logging.getLogger(__name__)
 
 from . import blocker_reporting, feedback, recovery_policy, skill_lib
+from .card_id import selected_task_id
 from .trace_adapter import trace
 _config = skill_lib.load("project_config")
 _core = skill_lib.load("harness_core")
@@ -106,7 +107,7 @@ def _reassign(task_id: str, board: str | None, event: dict, reviewer: str) -> No
 def guard_block(args: dict, task_id: str = "", **_: object) -> dict | None:
     """pre_tool_call guard for kanban_block (trace on only). Inactive on lookup errors."""
     try:
-        selected = str(args.get("task_id") or task_id or os.environ.get("HERMES_KANBAN_TASK") or "").strip()
+        selected = selected_task_id(args, task_id)
         board = args.get("board") or os.environ.get("HERMES_KANBAN_BOARD")
         workspace = str(_load_task(selected, board).get("workspace_path") or "")
         if not workspace or not _trace_on(Path(workspace)):
