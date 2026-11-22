@@ -58,13 +58,15 @@ def _records(root: Path, filename: str) -> list[dict]:
 
 @contextlib.contextmanager
 def _temp_hermes_home(prefix):
-    """Temp Hermes home whose removal survives hermes' detached scratch-prune child.
+    """Remove temp home safely despite a late Hermes cache writer.
 
-    The first `hermes` call in a fresh home spawns a detached prune process
-    (hermes_constants_scratch_detach.spawn_prune) that keeps writing under
-    <home>/profiles/*/cache after the CLI returns, so a single rmtree can fail with
-    ENOTEMPTY. Retry for a bounded time; a failure in the test body is never masked
-    by a cleanup failure.
+    Root cause: fresh-home boot runs step_install_default_plugins, which launches
+    a detached `python -I -c ... runpy.run_module('hermes_cli.default_plugins')`
+    child via default_plugins.spawn_install. Its failure path calls
+    memory_provider_migration._note_failure and recreates
+    <home>/cache/left-core-default-plugins.failed after the CLI returns. Tests set
+    HERMES_DISABLE_LAZY_INSTALLS=1 to prevent that child; bounded retry is a backstop.
+    Body failures are never masked by cleanup failures.
     """
     home = tempfile.mkdtemp(prefix=prefix)
     failed = False
@@ -109,7 +111,7 @@ def test_full_kanban_lifecycle_traced():
         profile_home = Path(home) / "profiles" / "test"
         profile_home.mkdir(parents=True)
         env = os.environ | {
-            "HERMES_HOME": str(profile_home),
+            "HERMES_DISABLE_LAZY_INSTALLS": "1", "HERMES_HOME": str(profile_home),
             "HERMES_KANBAN_HOME": str(Path(home) / "kanban-home"),
             "HERMES_KANBAN_BOARD": TEST_BOARD,
         }

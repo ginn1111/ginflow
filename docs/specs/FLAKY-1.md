@@ -26,6 +26,10 @@ OSError: [Errno 39] Directory not empty: '.../ginflow-gate-home-XXXX/cache'
 
 Seen on 2026-11-22: gate test failed 2 of 3 runs (`test_live_tmp_project_card`); trace test failed once in a full `make lint test` (`trace-test`). Something keeps writing into `<home>/.../cache` after the `hermes` subprocess returns (suspect: a detached/background child or a cache writer outliving the CLI call). Failure is more likely when several suites run at once.
 
+## Root cause (B1, resolved)
+
+The writer is the detached `python -I -c ... runpy.run_module('hermes_cli.default_plugins')` child started by `default_plugins.spawn_install()` from the boot step `step_install_default_plugins`. Its failure path calls `memory_provider_migration._note_failure`, which recreates `<home>/cache/left-core-default-plugins.failed` after the CLI returned (even after a successful rmtree). Evidence: leftover homes held only that file; `pgrep -af default_plugins` showed live children after a run. Fix: the tests' `hermes` calls set `HERMES_DISABLE_LAZY_INSTALLS=1`, so the child is never spawned; bounded-retry rmtree stays as a backstop.
+
 ## Desired behavior
 
 - B1. Find and record the late writer (process name and how it was identified).
