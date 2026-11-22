@@ -11,6 +11,7 @@
 - **Feedback card** — `<Card key>-fb<n>`: a card that addresses PR review on an existing card's branch. It fixes that card's scope; new scope comes from re-shaping the Issue instead.
 - **Change Group** — behavior-oriented review unit mapping acceptance to changed paths.
 - **Artifact baseline** — `artifact_baseline`: completion commit plus exact linked paths; the gate compares only those paths for drift.
+- **Actionable block** — a card block that needs human intervention because the worker cannot proceed or automatic recovery has failed. _Avoid_: failure, notification.
 
 ## Authority boundaries
 
