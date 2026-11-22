@@ -10,12 +10,15 @@ name and the card's identity.
 
 from __future__ import annotations
 
+import contextlib
 import importlib
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
 from types import ModuleType
 
@@ -53,10 +56,43 @@ def _records(root: Path, filename: str) -> list[dict]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+@contextlib.contextmanager
+def _temp_hermes_home(prefix):
+    """Temp Hermes home whose removal survives hermes' detached scratch-prune child.
+
+    The first `hermes` call in a fresh home spawns a detached prune process
+    (hermes_constants_scratch_detach.spawn_prune) that keeps writing under
+    <home>/profiles/*/cache after the CLI returns, so a single rmtree can fail with
+    ENOTEMPTY. Retry for a bounded time; a failure in the test body is never masked
+    by a cleanup failure.
+    """
+    home = tempfile.mkdtemp(prefix=prefix)
+    failed = False
+    try:
+        yield home
+    except BaseException:
+        failed = True
+        raise
+    finally:
+        deadline = time.monotonic() + 5.0
+        while True:
+            try:
+                shutil.rmtree(home)
+                break
+            except FileNotFoundError:
+                break
+            except OSError as exc:
+                if time.monotonic() >= deadline:
+                    if not failed:
+                        raise OSError(f"could not remove temp Hermes home {home}: {exc}") from exc
+                    break
+                time.sleep(0.1)
+
+
 def test_full_kanban_lifecycle_traced():
     with (
         tempfile.TemporaryDirectory(prefix="ginflow-trace-project-") as project,
-        tempfile.TemporaryDirectory(prefix="ginflow-trace-home-") as home,
+        _temp_hermes_home("ginflow-trace-home-") as home,
     ):
         target = Path(project)
         (target / "docs/specs").mkdir(parents=True)

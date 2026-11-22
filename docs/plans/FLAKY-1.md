@@ -1,5 +1,5 @@
 ---
-status: approved
+status: completed
 card: FLAKY-1
 scope: see spec
 owner: ginb

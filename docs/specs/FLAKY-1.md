@@ -1,5 +1,5 @@
 ---
-status: approved
+status: completed
 card: FLAKY-1
 assignee: ginb
 blocked_by: []

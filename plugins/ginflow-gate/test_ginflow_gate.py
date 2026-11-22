@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """Test ginflow-gate routing and registration behavior."""
 
+import contextlib
 import importlib
 import json
 import os
 import shutil
 import subprocess
 import tempfile
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -205,6 +207,39 @@ def test_old_version_metadata_does_not_change_guidance():
     print("PASS: version metadata does not change routing guidance")
 
 
+@contextlib.contextmanager
+def _temp_hermes_home(prefix):
+    """Temp Hermes home whose removal survives hermes' detached scratch-prune child.
+
+    The first `hermes` call in a fresh home spawns a detached prune process
+    (hermes_constants_scratch_detach.spawn_prune) that keeps writing under
+    <home>/profiles/*/cache after the CLI returns, so a single rmtree can fail with
+    ENOTEMPTY. Retry for a bounded time; a failure in the test body is never masked
+    by a cleanup failure.
+    """
+    home = tempfile.mkdtemp(prefix=prefix)
+    failed = False
+    try:
+        yield home
+    except BaseException:
+        failed = True
+        raise
+    finally:
+        deadline = time.monotonic() + 5.0
+        while True:
+            try:
+                shutil.rmtree(home)
+                break
+            except FileNotFoundError:
+                break
+            except OSError as exc:
+                if time.monotonic() >= deadline:
+                    if not failed:
+                        raise OSError(f"could not remove temp Hermes home {home}: {exc}") from exc
+                    break
+                time.sleep(0.1)
+
+
 def test_live_tmp_project_card():
     """Create a real temporary Kanban card and route it from its workspace."""
     body = (
@@ -213,7 +248,7 @@ def test_live_tmp_project_card():
         "Acceptance:\n- route blocked card\n"
         "Links:\n- docs/specs/TMP-1.md"
     )
-    with tempfile.TemporaryDirectory(prefix="ginflow-gate-project-") as project, tempfile.TemporaryDirectory(prefix="ginflow-gate-home-") as home:
+    with tempfile.TemporaryDirectory(prefix="ginflow-gate-project-") as project, _temp_hermes_home("ginflow-gate-home-") as home:
         target = Path(project)
         (target / "docs/specs").mkdir(parents=True)
         (target / "docs/specs/TMP-1.md").write_text("# Temporary brief\n")
@@ -252,7 +287,7 @@ def test_live_tmp_next_card_docs():
         "Acceptance:\n- validate docs\n"
         "Links:\n- docs/specs/TMP-2.md"
     )
-    with tempfile.TemporaryDirectory(prefix="ginflow-gate-project-") as project, tempfile.TemporaryDirectory(prefix="ginflow-gate-home-") as home:
+    with tempfile.TemporaryDirectory(prefix="ginflow-gate-project-") as project, _temp_hermes_home("ginflow-gate-home-") as home:
         target = Path(project)
         (target / "docs/specs").mkdir(parents=True)
         (target / "docs/specs/TMP-2.md").write_text("# Temporary brief\n")
