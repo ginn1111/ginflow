@@ -68,7 +68,7 @@ Regenerate evidence: `grep -rnw <name> plugins skills/ginflow scripts --include=
 | harness_core.py | `linked_artifacts` | [x] harness CLI / gate / routing | [ ] | [ ] |
 | harness_core.py | `startup_gate` | [x] harness CLI / gate / routing | [ ] | [x] |
 | harness_core.py | `artifact_gate` | [x] harness CLI / gate / routing | [ ] | [x] |
-| project_config.py | `config_path` | [x] harness CLI / gate / routing | [ ] | [x] |
+| project_config.py | `config_path` (worktree-aware lookup: own file, else main checkout) | [x] harness CLI / gate / routing | [ ] | [x] |
 | project_config.py | `config_exists` | [x] harness CLI / gate / routing | [ ] | [x] |
 | project_config.py | `load_config` | [x] harness CLI / gate / routing | [ ] | [x] |
 | project_config.py | `context_error` | [x] harness CLI / gate / routing | [ ] | [x] |
