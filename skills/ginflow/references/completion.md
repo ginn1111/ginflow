@@ -8,15 +8,25 @@ Native `kanban_request_review` (worker) and `kanban_complete` (reviewer) both pa
 - [ ] Read `git status --short`; report only files under card workspace.
 - [ ] Finalize every linked local spec/plan: YAML frontmatter at byte 0 with `status: completed`. Body status text is ignored.
 - [ ] Commit those documents and card-scoped changes. Stage only exact linked artifacts and intended files.
-- [ ] Record fresh command and exact result on the card.
+- [ ] Quote the canonical command and its exact fresh result in the completion report; record the same evidence on the card before requesting review.
 - [ ] Call `kanban_request_review` with `metadata.verification_result` and `metadata.artifact_baseline` (commit matches).
 
 ## Reviewer: before `kanban_complete`
 
 - [ ] Validate scope, acceptance, diff, evidence independently.
 - [ ] Call `kanban_complete` with `metadata.verification_result` (`commit`, `command`, `result`) and matching `metadata.artifact_baseline` (`commit`, `paths`).
-- [ ] `ginflow-gate` checks card fields, baseline commit, exact linked paths, drift. Invalid or unavailable evidence rejects the transition.
+- [ ] `ginflow-gate` checks card fields, verification metadata, baseline commit, exact linked paths, and drift. Invalid or unavailable evidence rejects the transition.
 - [ ] Return invalid review with `kanban_request_changes`: `reason`, `evidence` (file:line, command, or gate error), `next_action`.
+
+Any worker may complete a card assigned to it through `ginflow-gate`; the reviewer completes with matching metadata. For example:
+
+```text
+kanban_request_review(task_id='<hermes-task-id, e.g. t_ab12>', summary='<short review request>',
+  metadata={'verification_result': {'commit': '<commit>', 'command': 'make test', 'result': 'passed'},
+            'artifact_baseline': {'commit': '<commit>', 'paths': ['docs/specs/<CARD-ID>.md']}})
+```
+
+If `ginflow-gate` is not installed, report a blocker, make no completion claim, and record evidence and baseline on the card by hand.
 
 ## Workspace warnings
 
@@ -50,4 +60,4 @@ python3 <setup-repo>/skills/ginflow/scripts/validate-harness.py \
 - Compare only linked paths against completion commit. Never whole repo. No per-file SHA fallback.
 - Missing commit, path-list mismatch, missing artifact, committed or uncommitted change = drift. Blocks affected lifecycle use only. Unrelated paths and cards continue.
 - Never silently advance completion commit.
-- Never copy harness script into target repo. Report project verification and harness separately.
+- Never copy harness script into target repo. Report project verification and harness separately. For drift layers and order, see `drift-detect.md`.

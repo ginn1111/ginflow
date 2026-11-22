@@ -57,7 +57,17 @@ explicit `GINFLOW_LOG` environment value overrides the flag for a single
 process: `GINFLOW_LOG=1` forces tracing on, any other value forces it off, and
 an unset variable falls back to `ginflow.trace`. Defaults to off when omitted.
 
-A valid existing config is used by Kanban reads when no override is supplied and is not overwritten during ordinary skill loading. If the file is missing, `/ginflow` asks whether to use the current/default board or create a new board. New-board selection requires a non-empty name and successful native board creation before persistence. Malformed, incomplete, or workspace-mismatched config fails closed and must be repaired or explicitly resolved by the user; it never causes a silent workspace or board switch. Verification reads this file but does not initialize or rewrite it.
+A valid existing config is used by Kanban reads when no override is supplied and is not overwritten during ordinary skill loading. On first `/ginflow` load, inspect `.ginflow.yaml` at repo root. If missing, show the resolved workspace and board, then ask whether to use the current/default board or create a new board. New-board selection requires a non-empty name and successful native board creation before persistence. Malformed, incomplete, or workspace-mismatched config fails closed and must be repaired or explicitly resolved by the user; it never causes a silent workspace or board switch. Verification reads this file but does not initialize or rewrite it.
+
+## Execution startup
+
+1. Confirm workspace is the real target repo. Read `.hermes.md`, then `AGENTS.md`.
+2. If the board is empty, route to shaping. Otherwise use `kanban_list`/`kanban_show` to resume the selected card.
+3. Execution requires a selected card. Confirm ID, title, objective, scope, acceptance, workspace, status, assignee, and links; stop if absent or incomplete.
+4. Read the linked spec/plan. For a completed card, run the linked-artifact gate in `completion.md` before using it.
+5. Inspect git state; run project baseline verification, then the external Ginflow harness against the target workspace and card. Report the two results separately.
+6. Follow routing context injected by `ginflow-gate`. Routing hints are advisory, not authorization: call `skill_view` yourself. Precedence: target rules, card contract, Ginflow matrix, selected skill, skill defaults.
+
 
 Routing distinguishes a missing config from an invalid config. Both are mutation
 blockers: missing context directs the agent to run `/ginflow`, while invalid context

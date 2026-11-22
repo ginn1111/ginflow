@@ -106,6 +106,9 @@ def main():
 
     root = (args.setup_repo or Path(__file__).resolve().parents[3]).resolve()
     ginflow = (root / "skills/ginflow/SKILL.md").read_text()
+    project_context = (root / "skills/ginflow/references/project-context.md").read_text()
+    completion = (root / "skills/ginflow/references/completion.md").read_text()
+    kanban_guide = (root / "skills/ginflow/references/kanban-guide.md").read_text()
     target = args.target.resolve() if args.target else None
     config_error = context_error(target) if target else None
     if target and not config_error:
@@ -148,7 +151,7 @@ def main():
     subsystems = {
         "instructions": check("instructions", [
             (True, "Artifact repository provides shared ginflow instructions", "warning"),
-            (all(has(ginflow, heading) for heading in ("## Project session startup", "## Execution contract", "## Definition of done", "## Completion report")), "Canonical ginflow instruction sections exist", "warning"),
+            (all(has(ginflow, heading) for heading in ("## Startup", "## Definition of done", "## Completion")) and has(project_context, "## Execution startup") and has(completion, "## Worker: before"), "Canonical ginflow instruction sections exist", "warning"),
             (not target or bool(local_path), "Target local instruction file exists when target supplied", "warning"),
             (not target or has(local, "come from `ginflow`"), "Target local instructions route shared workflow to ginflow when target supplied", "warning"),
         ]),
@@ -186,18 +189,18 @@ def main():
         ], exercised=bool(target)),
         "verification": check("verification", [
             (verification_documented, "Canonical project verification is documented", "blocker"),
-            (has(ginflow, "Quote canonical") and has(ginflow, "exact fresh result"), "Fresh evidence format is required", "warning"),
+            (has(completion, "Quote the canonical command") and has(completion, "exact fresh result"), "Fresh evidence format is required", "warning"),
         ], exercised=bool(target)),
         "scope": check("scope", [
-            (has(ginflow, "One active card per mutable workspace"), "Mutable-workspace isolation rule exists", "warning"),
+            (has(kanban_guide, "Workspace rule:"), "Mutable-workspace isolation rule exists", "warning"),
             (bool(card and all(card.get(field) for field in ("scope", "acceptance", "workspace"))), "Card tracks scope, acceptance, and workspace", "blocker"),
             (any(has(local, word) for word in ("forbidden", "boundaries", "sensitive paths")), "Target local boundaries exist", "warning"),
         ], exercised=bool(target)),
         "lifecycle": check("lifecycle", [
-            (has(ginflow, "## Project session startup"), "Startup contract exists", "warning"),
-            (has(ginflow, "## Session close and restart"), "Close/restart contract exists", "warning"),
-            (has(ginflow, "Kanban card is default durable handoff"), "Kanban-first handoff exists", "warning"),
-            (has(ginflow, "## Optional session handoff export"), "Optional export exists", "warning"),
+            (has(project_context, "## Execution startup"), "Startup contract exists", "warning"),
+            (has(kanban_guide, "Before closing unfinished or blocked work"), "Close/restart contract exists", "warning"),
+            (has(kanban_guide, "record outcome") and has(kanban_guide, "on card"), "Kanban-first handoff exists", "warning"),
+            (has((root / "skills/ginflow/references/handoff-export.md").read_text(), "# Optional session handoff export"), "Optional export exists", "warning"),
             (not target or verification_documented, "Clean restart verification path is documented when target supplied", "blocker"),
         ]),
         "optional_tools": optional_tools,
