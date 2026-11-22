@@ -5,13 +5,11 @@ description: Use when starting, resuming, or finishing work in a project under H
 
 # ginflow
 
-Workflow integration for Hermes profiles. Hermes owns lifecycle (identity, Kanban, dispatch, state). Target repo owns product code and canonical verification. Setup repo owns tooling. `ginflow-gate` owns evidence checks at native transitions.
-
-Never use setup repo as workspace. Never copy harness into target repo.
+Workflow integration for Hermes profiles. Hermes owns lifecycle (identity, Kanban, dispatch, state). `ginflow-gate` owns evidence checks at native transitions.
 
 ## When to use
 
-- starting, resuming, or closing target-project work
+- starting, resuming, or closing project work
 - shaping a Kanban card or its spec/plan
 - deciding where docs belong
 - exporting a session handoff
@@ -30,7 +28,7 @@ Never use setup repo as workspace. Never copy harness into target repo.
 
 Shaping may write artifacts but never mutates product code or dispatches. Terms: `GLOSSARY.md`. Decision: `docs/adrs/0002-spec-first-cards.md`.
 
-No selected/running card owns the workspace: route new work to shaping. No selected card blocks project execution.
+Before implementation, apply the complexity triggers and gate in `references/complex-work-gate.md`. No selected/running card owns the workspace: route new work to shaping. No selected card blocks execution when the complex-work gate applies.
 
 ## Doc layout
 
@@ -46,7 +44,7 @@ No selected/running card owns the workspace: route new work to shaping. No selec
 - `<CARD-ID>` (e.g. `APP-9`): human work key, used in titles and artifact paths.
 - `$TASK_ID` (e.g. `t_ab12`): Hermes-generated task ID. Use it for Kanban tools and `--kanban-task-id`. Never rename artifacts to it.
 - Artifacts: YAML frontmatter at byte 0 (`status`, `scope`, `owner`). No body-only `Status:`.
-- No artifacts in setup repo unless task changes the global profile system.
+
 - Details: `references/doc-layout.md`, `references/artifact-content-guide.md`.
 
 ### Kanban status mapping
@@ -99,7 +97,6 @@ Before review or completion, follow `references/completion.md` for evidence, met
 
 Stop and clarify when (and only then; a pending PR merge is never a stop reason, see "Continuous flow"):
 
-- wrong repo
 - card missing required fields
 - completed card missing a valid completion commit for linked docs
 - completed card artifact missing, committed after, or uncommitted relative to completion commit
@@ -109,10 +106,11 @@ Stop and clarify when (and only then; a pending PR merge is never a stop reason,
 ## References
 
 - `references/completion.md`, `references/handoff-export.md`, `references/example-flow.md`
+- `references/complex-work-gate.md` (load before implementation when any complexity trigger applies)
 - `references/doc-layout.md`, `references/kanban-guide.md`, `references/drift-detect.md`
 - `references/project-context.md`, `references/blank-project-checklist.md`
 - `references/workspace-health-warnings.md`
 - `references/trace-routing.md` (block kinds, `required_action`; read before `kanban_block`)
 - `templates/plan.md`, `templates/spec.md`, `templates/kanban-task.md`, `templates/session-handoff.md`
-- setup repo `templates/hermes.md`
-- maintainer notes: `docs/ginflow-design-notes.md` (setup repo)
+- `templates/hermes.md`
+- maintainer notes: `docs/ginflow-design-notes.md`

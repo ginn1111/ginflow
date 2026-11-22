@@ -35,7 +35,7 @@ Use a lock or claim to prevent the hook and cron from sending the same alert con
 
 ## Verification
 
-Test immediate notification with trace off; `notify.target` success; missing/failed target falling back to Hermes Telegram home; both routes failing and later recovering; retry after worker restart; duplicate hook suppression; concurrent hook/tick claim; new action on the same card; unblocking before delivery; first transient recovery versus failed recovery and triage; dependency wait; absent credentials/destination; and scheduler init idempotence. Assert exact short message fields and no secret leakage. Test delivery failure without changing Kanban transition results. Run repository canonical `make lint && make test` for implementation.
+Test immediate notification with trace off; `notify.target` success; missing/failed target falling back to Hermes Telegram home; both routes failing and later recovering; retry after worker restart; duplicate hook suppression; concurrent hook/tick claim; new action on the same card; unblocking before delivery; first transient recovery versus failed recovery and triage; dependency wait; absent credentials/destination; and scheduler init idempotence. Assert exact short message fields and no secret leakage. Test delivery failure without changing Kanban transition results. For this design review, run `make lint` only. Implementation verification remains subject to the repository's required checks.
 
 ## Deferred
 

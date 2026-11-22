@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-TMP="$(mktemp -d)"
+TMP="$(cd "$(mktemp -d)" && pwd -P)" # Match installer's canonical profile/project paths.
 trap 'chmod -R u+w "$TMP" 2>/dev/null || true; rm -rf "$TMP"' EXIT
 
 HOME_ROOT="$TMP/home"
