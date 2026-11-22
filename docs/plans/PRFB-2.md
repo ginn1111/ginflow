@@ -1,5 +1,5 @@
 ---
-status: draft
+status: completed
 card: PRFB-2
 scope: see spec
 owner: ginb

@@ -1,5 +1,5 @@
 ---
-status: draft
+status: completed
 card: PRFB-2
 assignee: ginb
 blocked_by: [PRFB-1]
