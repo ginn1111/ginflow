@@ -527,6 +527,57 @@ with tempfile.TemporaryDirectory(prefix="ginflow-gate-") as directory:
         })
         assert "status: completed" in error
 
+def test_card_id_selection():
+    """GATEID-1: args id > HERMES_KANBAN_TASK > hook kwarg, same in pre/post/guard_block."""
+    block = importlib.import_module("ginflow-gate.block_routing")
+    seen = {"load": [], "finish": [], "task": []}
+    saved = (module.load_card, module.validate_completion, module._publish.prepare,
+             module._publish.finish, block._load_task)
+    saved_env = os.environ.get("HERMES_KANBAN_TASK")
+    module.load_card = lambda tid, board=None: seen["load"].append(tid) or {"workspace": ""}
+    module.validate_completion = lambda card, metadata: None
+    module._publish.prepare = lambda *a, **k: None
+    module._publish.finish = lambda tid, result, kw: seen["finish"].append(tid)
+    block._load_task = lambda tid, board: seen["task"].append(tid) or {}
+    try:
+        cases = [
+            ({}, "card-env", "uuid-1", "card-env"),
+            ({"task_id": "card-arg"}, "card-env", "uuid-1", "card-arg"),
+            ({}, None, "uuid-1", "uuid-1"),
+            ({"task_id": "  "}, " card-env ", "uuid-1", "card-env"),
+        ]
+        for args, env, kwarg, expected in cases:
+            if env is None:
+                os.environ.pop("HERMES_KANBAN_TASK", None)
+            else:
+                os.environ["HERMES_KANBAN_TASK"] = env
+            for tool in ("kanban_request_review", "kanban_complete"):
+                seen["load"].clear()
+                module.pre_tool_call(tool, {**args, "metadata": {}}, task_id=kwarg)
+                assert seen["load"] == [expected], (tool, args, env, seen)
+            seen["finish"].clear()
+            module.post_tool_call("kanban_complete", {}, args, task_id=kwarg)
+            assert seen["finish"] == [expected], (args, env, seen)
+            seen["task"].clear()
+            block.guard_block(dict(args), kwarg)
+            assert seen["task"] == [expected], (args, env, seen)
+        os.environ.pop("HERMES_KANBAN_TASK", None)
+        module.post_tool_call("kanban_complete", {}, None, task_id="uuid-2")
+        assert module.pre_tool_call("kanban_complete", {"metadata": {}}, task_id="")["message"].endswith(
+            "kanban_complete requires task_id")
+    finally:
+        (module.load_card, module.validate_completion, module._publish.prepare,
+         module._publish.finish, block._load_task) = saved
+        if saved_env is None:
+            os.environ.pop("HERMES_KANBAN_TASK", None)
+        else:
+            os.environ["HERMES_KANBAN_TASK"] = saved_env
+    print("PASS: card id selection")
+
+
+test_card_id_selection()
+
+
 class Hooks:
     def __init__(self):
         self.names = []
