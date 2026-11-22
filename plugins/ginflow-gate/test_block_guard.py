@@ -27,9 +27,9 @@ for kind in ("needs_input", "capability"):
 assert call({"kind": "transient", "reason": "flaky"}) is None
 assert call({"kind": "dependency", "reason": "waiting"}) is None
 assert call({"reason": "r"}, tool="kanban_complete") is None
-assert "Required action: add API key." in br.build_message("t", "x\nrequired_action: add API key", "p", 1)
+assert "Your action: add API key" in br.build_message("t", "x\nrequired_action: add API key", "p", 1)
 
-os.environ["GINFLOW_LOG"] = "0"  # trace off: inactive
-assert call({"reason": "r"}) is None
-assert call({"kind": "needs_input", "reason": "r"}) is None
+os.environ["GINFLOW_LOG"] = "0"  # notifications and guard are independent of trace
+assert call({"reason": "r"}) is not None
+assert call({"kind": "needs_input", "reason": "r"}) is not None
 print("PASS: kanban_block guard")

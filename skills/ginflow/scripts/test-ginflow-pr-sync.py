@@ -45,8 +45,9 @@ def main():
     (bin_dir / "gh").chmod(0o755)
     env = {k: v for k, v in os.environ.items()
            if not k.startswith("HERMES_KANBAN") and k not in ("HERMES_DELEGATED_CHILD_CONTEXT", "HERMES_SUPERVISED_CHILD", "HERMES_PROFILE")}
-    env.update(HERMES_HOME=str(tmp / "home/profiles/test"), HERMES_KANBAN_HOME=str(tmp / "kh"), HERMES_KANBAN_BOARD=BOARD,
+    env.update(HERMES_KANBAN_HOME=str(tmp / "kh"), HERMES_KANBAN_BOARD=BOARD,
                PATH=f"{bin_dir}:{env['PATH']}", FAKE_DIR=str(fake))
+    assert env.get("HERMES_HOME") == os.environ.get("HERMES_HOME"), "Kanban test must not provision a fresh Hermes runtime"
 
     def sh(*argv, cwd=repo):
         return subprocess.run(argv, cwd=cwd, env=env, text=True, capture_output=True)

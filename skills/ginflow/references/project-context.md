@@ -1,6 +1,6 @@
 # Canonical project context
 
-The first `/ginflow` skill load initializes `.ginflow.yaml` in the current project root:
+The first `/ginflow` skill load initializes `.ginflow.yaml` in the current project root. The file is local per clone and git-excluded (`ginflow init` step `exclude`); a card worktree without its own copy resolves to the main checkout's file via `config_path`, and writers update that file:
 
 First-load initialization is agent-procedural: `/ginflow` invokes the initializer and
 collects the board choice. Runtime validation and persistence enforce the contract,
@@ -75,6 +75,7 @@ ginflow init [--project PATH] [--board NAME | --new-board NAME] [--worker PROFIL
 Each step prints `ok|set|fail <step>: <detail>`; exit 0 when no `fail`. A second run with nothing to change prints only `ok` and writes nothing. No prompts: `/ginflow` asks, then passes flags.
 
 1. `context`: valid `.ginflow.yaml` is ok. Missing: `initialize_context` with `--board` (existing board) or `--new-board` (`hermes kanban boards create --default-workdir <repo>`); neither flag fails. Invalid config fails and is never overwritten.
+1a. `exclude`: `.ginflow.yaml` and `.hermes.md` are lines in `<git-common-dir>/info/exclude` (`set exclude: added ...` or `ok exclude: present`); a repo that tracks `.ginflow.yaml` fails with `fail exclude: .ginflow.yaml is tracked; run git rm --cached .ginflow.yaml` and nothing else changes.
 2. `workdir`: board `default_workdir` equals repo root; unset is set via `hermes kanban boards set-default-workdir`; another path fails and nothing is rewritten.
 3. `reviewer`: `--reviewer` is recorded by `persist_reviewer`; `seed_default_reviewer` writes `kanban.default_reviewer_profile` when it differs from `hermes_default_reviewer`.
 4. `worker`: `--worker` stored by `persist_worker_defaults`; the `configured_worker`/`resolve_worker_dispatch` result is printed.

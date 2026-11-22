@@ -10,12 +10,15 @@ name and the card's identity.
 
 from __future__ import annotations
 
+import contextlib
 import importlib
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
 from types import ModuleType
 
@@ -53,10 +56,69 @@ def _records(root: Path, filename: str) -> list[dict]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def _wait_for_home_writers(home, timeout):
+    """Wait until no process whose environment points into `home` is still running."""
+    needle = str(home).encode()
+    me = os.getpid()
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        busy = False
+        for entry in Path("/proc").glob("[0-9]*"):
+            if int(entry.name) == me:
+                continue
+            try:
+                if needle in (entry / "environ").read_bytes():
+                    busy = True
+                    break
+            except OSError:
+                continue
+        if not busy:
+            return
+        time.sleep(0.2)
+
+
+@contextlib.contextmanager
+def _temp_hermes_home(prefix):
+    """Remove temp home safely despite a late Hermes cache writer.
+
+    Root cause: fresh-home boot runs step_install_default_plugins, which launches
+    a detached `python -I -c ... runpy.run_module('hermes_cli.default_plugins')`
+    child via default_plugins.spawn_install. Its failure path calls
+    memory_provider_migration._note_failure and recreates
+    <home>/cache/left-core-default-plugins.failed after the CLI returns. HERMES_DISABLE_LAZY_INSTALLS=1
+    cannot be used (fresh-home `hermes kanban init` then refuses to start), so wait
+    for processes whose environment points into the home to exit before rmtree;
+    bounded retry is a backstop.
+    Body failures are never masked by cleanup failures.
+    """
+    home = tempfile.mkdtemp(prefix=prefix)
+    failed = False
+    try:
+        yield home
+    except BaseException:
+        failed = True
+        raise
+    finally:
+        _wait_for_home_writers(home, 120.0)
+        deadline = time.monotonic() + 5.0
+        while True:
+            try:
+                shutil.rmtree(home)
+                break
+            except FileNotFoundError:
+                break
+            except OSError as exc:
+                if time.monotonic() >= deadline:
+                    if not failed:
+                        raise OSError(f"could not remove temp Hermes home {home}: {exc}") from exc
+                    break
+                time.sleep(0.1)
+
+
 def test_full_kanban_lifecycle_traced():
     with (
         tempfile.TemporaryDirectory(prefix="ginflow-trace-project-") as project,
-        tempfile.TemporaryDirectory(prefix="ginflow-trace-home-") as home,
+        _temp_hermes_home("ginflow-trace-home-") as home,
     ):
         target = Path(project)
         (target / "docs/specs").mkdir(parents=True)

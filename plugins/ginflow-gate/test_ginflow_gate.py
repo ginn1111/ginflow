@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """Test ginflow-gate routing and registration behavior."""
 
+import contextlib
 import importlib
 import json
 import os
 import shutil
 import subprocess
 import tempfile
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -205,6 +207,65 @@ def test_old_version_metadata_does_not_change_guidance():
     print("PASS: version metadata does not change routing guidance")
 
 
+def _wait_for_home_writers(home, timeout):
+    """Wait until no process whose environment points into `home` is still running."""
+    needle = str(home).encode()
+    me = os.getpid()
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        busy = False
+        for entry in Path("/proc").glob("[0-9]*"):
+            if int(entry.name) == me:
+                continue
+            try:
+                if needle in (entry / "environ").read_bytes():
+                    busy = True
+                    break
+            except OSError:
+                continue
+        if not busy:
+            return
+        time.sleep(0.2)
+
+
+@contextlib.contextmanager
+def _temp_hermes_home(prefix):
+    """Remove temp home safely despite a late Hermes cache writer.
+
+    Root cause: fresh-home boot runs step_install_default_plugins, which launches
+    a detached `python -I -c ... runpy.run_module('hermes_cli.default_plugins')`
+    child via default_plugins.spawn_install. Its failure path calls
+    memory_provider_migration._note_failure and recreates
+    <home>/cache/left-core-default-plugins.failed after the CLI returns. HERMES_DISABLE_LAZY_INSTALLS=1
+    cannot be used (fresh-home `hermes kanban init` then refuses to start), so wait
+    for processes whose environment points into the home to exit before rmtree;
+    bounded retry is a backstop.
+    Body failures are never masked by cleanup failures.
+    """
+    home = tempfile.mkdtemp(prefix=prefix)
+    failed = False
+    try:
+        yield home
+    except BaseException:
+        failed = True
+        raise
+    finally:
+        _wait_for_home_writers(home, 120.0)
+        deadline = time.monotonic() + 5.0
+        while True:
+            try:
+                shutil.rmtree(home)
+                break
+            except FileNotFoundError:
+                break
+            except OSError as exc:
+                if time.monotonic() >= deadline:
+                    if not failed:
+                        raise OSError(f"could not remove temp Hermes home {home}: {exc}") from exc
+                    break
+                time.sleep(0.1)
+
+
 def test_live_tmp_project_card():
     """Create a real temporary Kanban card and route it from its workspace."""
     body = (
@@ -213,7 +274,7 @@ def test_live_tmp_project_card():
         "Acceptance:\n- route blocked card\n"
         "Links:\n- docs/specs/TMP-1.md"
     )
-    with tempfile.TemporaryDirectory(prefix="ginflow-gate-project-") as project, tempfile.TemporaryDirectory(prefix="ginflow-gate-home-") as home:
+    with tempfile.TemporaryDirectory(prefix="ginflow-gate-project-") as project, _temp_hermes_home("ginflow-gate-home-") as home:
         target = Path(project)
         (target / "docs/specs").mkdir(parents=True)
         (target / "docs/specs/TMP-1.md").write_text("# Temporary brief\n")
@@ -252,7 +313,7 @@ def test_live_tmp_next_card_docs():
         "Acceptance:\n- validate docs\n"
         "Links:\n- docs/specs/TMP-2.md"
     )
-    with tempfile.TemporaryDirectory(prefix="ginflow-gate-project-") as project, tempfile.TemporaryDirectory(prefix="ginflow-gate-home-") as home:
+    with tempfile.TemporaryDirectory(prefix="ginflow-gate-project-") as project, _temp_hermes_home("ginflow-gate-home-") as home:
         target = Path(project)
         (target / "docs/specs").mkdir(parents=True)
         (target / "docs/specs/TMP-2.md").write_text("# Temporary brief\n")
@@ -526,6 +587,57 @@ with tempfile.TemporaryDirectory(prefix="ginflow-gate-") as directory:
             "verification_result": {"commit": commit, "command": "make test", "result": "passed"}
         })
         assert "status: completed" in error
+
+def test_card_id_selection():
+    """GATEID-1: args id > HERMES_KANBAN_TASK > hook kwarg, same in pre/post/guard_block."""
+    block = importlib.import_module("ginflow-gate.block_routing")
+    seen = {"load": [], "finish": [], "task": []}
+    saved = (module.load_card, module.validate_completion, module._publish.prepare,
+             module._publish.finish, block._load_task)
+    saved_env = os.environ.get("HERMES_KANBAN_TASK")
+    module.load_card = lambda tid, board=None: seen["load"].append(tid) or {"workspace": ""}
+    module.validate_completion = lambda card, metadata: None
+    module._publish.prepare = lambda *a, **k: None
+    module._publish.finish = lambda tid, result, kw: seen["finish"].append(tid)
+    block._load_task = lambda tid, board: seen["task"].append(tid) or {}
+    try:
+        cases = [
+            ({}, "card-env", "uuid-1", "card-env"),
+            ({"task_id": "card-arg"}, "card-env", "uuid-1", "card-arg"),
+            ({}, None, "uuid-1", "uuid-1"),
+            ({"task_id": "  "}, " card-env ", "uuid-1", "card-env"),
+        ]
+        for args, env, kwarg, expected in cases:
+            if env is None:
+                os.environ.pop("HERMES_KANBAN_TASK", None)
+            else:
+                os.environ["HERMES_KANBAN_TASK"] = env
+            for tool in ("kanban_request_review", "kanban_complete"):
+                seen["load"].clear()
+                module.pre_tool_call(tool, {**args, "metadata": {}}, task_id=kwarg)
+                assert seen["load"] == [expected], (tool, args, env, seen)
+            seen["finish"].clear()
+            module.post_tool_call("kanban_complete", {}, args, task_id=kwarg)
+            assert seen["finish"] == [expected], (args, env, seen)
+            seen["task"].clear()
+            block.guard_block(dict(args), kwarg)
+            assert seen["task"] == [expected], (args, env, seen)
+        os.environ.pop("HERMES_KANBAN_TASK", None)
+        module.post_tool_call("kanban_complete", {}, None, task_id="uuid-2")
+        assert module.pre_tool_call("kanban_complete", {"metadata": {}}, task_id="")["message"].endswith(
+            "kanban_complete requires task_id")
+    finally:
+        (module.load_card, module.validate_completion, module._publish.prepare,
+         module._publish.finish, block._load_task) = saved
+        if saved_env is None:
+            os.environ.pop("HERMES_KANBAN_TASK", None)
+        else:
+            os.environ["HERMES_KANBAN_TASK"] = saved_env
+    print("PASS: card id selection")
+
+
+test_card_id_selection()
+
 
 class Hooks:
     def __init__(self):
